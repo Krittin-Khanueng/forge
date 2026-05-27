@@ -6,7 +6,7 @@ actor BinaryResolver {
 
     private var cache: [String: URL] = [:]
 
-    private var hardcodedPrefixes: [String] {
+    private func knownBinPaths() -> [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "/opt/homebrew/bin",
@@ -17,6 +17,33 @@ actor BinaryResolver {
             "/usr/bin",
             "/bin",
         ]
+    }
+
+    private var hardcodedPrefixes: [String] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        var prefixes = knownBinPaths()
+
+        if let nvmDir = ProcessInfo.processInfo.environment["NVM_DIR"] {
+            let symlink = nvmDir + "/versions/node"
+            if let entries = try? FileManager.default.contentsOfDirectory(atPath: symlink) {
+                for entry in entries where entry.hasPrefix("v") {
+                    prefixes.append("\(nvmDir)/versions/node/\(entry)/bin")
+                }
+            }
+        }
+
+        let fm = FileManager.default
+        let fnmDefault = home + "/Library/Application Support/fnm/node-versions"
+        if fm.fileExists(atPath: fnmDefault) {
+            let versionsDir = URL(fileURLWithPath: fnmDefault)
+            if let entries = try? fm.contentsOfDirectory(atPath: versionsDir.path) {
+                if let latest = entries.sorted().last {
+                    prefixes.append("\(fnmDefault)/\(latest)/installation/bin")
+                }
+            }
+        }
+
+        return prefixes
     }
 
     private let logger = Logger(subsystem: "com.forge.app", category: "process")
@@ -74,9 +101,8 @@ actor BinaryResolver {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/bin/zsh")
             process.arguments = ["-lc", "command -v \(name)"]
-            let home = FileManager.default.homeDirectoryForCurrentUser.path
             process.environment = [
-                "PATH": "/opt/homebrew/bin:\(home)/.bun/bin:\(home)/.local/bin:\(home)/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+                "PATH": hardcodedPrefixes.joined(separator: ":")
             ]
 
             let pipe = Pipe()

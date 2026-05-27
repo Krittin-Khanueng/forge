@@ -215,19 +215,61 @@ actor ProcessRunner {
         _ custom: [String: String]?,
         inheritPATH: Bool
     ) -> [String: String] {
+        let knownPath = knownBinPaths.joined(separator: ":")
+
         var env: [String: String]
         if inheritPATH {
             env = ProcessInfo.processInfo.environment
+            if let existingPath = env["PATH"] {
+                env["PATH"] = "\(knownPath):\(existingPath)"
+            } else {
+                env["PATH"] = knownPath
+            }
         } else {
             env = [:]
+            env["PATH"] = knownPath
         }
-        env["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
         if let custom {
             for (key, value) in custom {
                 env[key] = value
             }
         }
         return env
+    }
+
+    private var knownBinPaths: [String] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        var paths: [String] = [
+            "/opt/homebrew/bin",
+            home + "/.bun/bin",
+            home + "/.local/bin",
+            home + "/.cargo/bin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+        ]
+
+        if let nvmDir = ProcessInfo.processInfo.environment["NVM_DIR"] {
+            let symlink = nvmDir + "/versions/node"
+            if let entries = try? FileManager.default.contentsOfDirectory(atPath: symlink) {
+                for entry in entries where entry.hasPrefix("v") {
+                    paths.append("\(nvmDir)/versions/node/\(entry)/bin")
+                }
+            }
+        }
+
+        let fm = FileManager.default
+        let fnmDefault = home + "/Library/Application Support/fnm/node-versions"
+        if fm.fileExists(atPath: fnmDefault) {
+            let versionsDir = URL(fileURLWithPath: fnmDefault)
+            if let entries = try? fm.contentsOfDirectory(atPath: versionsDir.path) {
+                if let latest = entries.sorted().last {
+                    paths.append("\(fnmDefault)/\(latest)/installation/bin")
+                }
+            }
+        }
+
+        return paths
     }
 
     private func withProcessTimeout<T: Sendable>(
