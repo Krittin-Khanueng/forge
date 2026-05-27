@@ -20,7 +20,13 @@ actor BunManager: PackageManagerProtocol {
 
     func installedPackages() async throws -> [Package] {
         let bunURL = try await requireBun()
-        let result = try await runner.run(bunURL, arguments: ["pm", "ls", "-g"])
+        let homeDir = URL(fileURLWithPath: FileManager.default.homeDirectoryForCurrentUser.path)
+        let options = ProcessRunner.Options(workingDirectory: homeDir)
+        let result = try? await runner.run(bunURL, arguments: ["pm", "ls", "-g"], options: options)
+        guard let result else {
+            logger.warning("bun pm ls -g failed")
+            return []
+        }
 
         let lines = result.stdout.split(separator: "\n", omittingEmptySubsequences: true)
         var packages: [Package] = []

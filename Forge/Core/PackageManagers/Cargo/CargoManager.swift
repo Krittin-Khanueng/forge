@@ -39,13 +39,12 @@ actor CargoManager: PackageManagerProtocol {
     func outdatedPackages() async throws -> [Package] {
         let cargoURL = try await requireCargo()
 
-        let probe = try? await runner.run(cargoURL, arguments: ["outdated", "--help"])
-        if probe == nil {
+        let probeOpts = ProcessRunner.Options(silenceErrorLog: true)
+        guard let result = try? await runner.run(cargoURL, arguments: ["outdated", "--format", "json"], options: probeOpts) else {
             logger.info("cargo-outdated subcommand not installed — install with: cargo install cargo-outdated")
             return []
         }
 
-        let result = try await runner.run(cargoURL, arguments: ["outdated", "--format", "json"])
         let items = try JSONOutputDecoder.decode([CargoOutdatedItem].self, from: result.stdout)
 
         return items.map { item in

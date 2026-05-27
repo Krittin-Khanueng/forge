@@ -13,6 +13,7 @@ actor BinaryResolver {
             home + "/.bun/bin",
             home + "/.local/bin",
             home + "/.cargo/bin",
+            home + "/Library/pnpm/bin",
             "/usr/local/bin",
             "/usr/bin",
             "/bin",

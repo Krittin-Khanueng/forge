@@ -7,6 +7,7 @@ actor ProcessRunner {
         var environment: [String: String]?
         var timeout: Duration?
         var inheritParentPATH: Bool = true
+        var silenceErrorLog: Bool = false
 
         static let `default` = Options()
     }
@@ -47,6 +48,7 @@ actor ProcessRunner {
 
         try process.run()
         let pid = process.processIdentifier
+        let silenceErrorLog = options.silenceErrorLog
 
         return try await withTaskCancellationHandler {
             try await withProcessTimeout(options.timeout, commandLabel: commandLabel, pid: pid) {
@@ -64,7 +66,11 @@ actor ProcessRunner {
                 let stderr = String(data: err, encoding: .utf8) ?? ""
 
                 guard process.terminationStatus == 0 else {
-                    self.logger.error("Non-zero exit (\(process.terminationStatus)): \(commandLabel)\n\(stderr)")
+                    if !silenceErrorLog {
+                        self.logger.error("Non-zero exit (\(process.terminationStatus)): \(commandLabel)\n\(stderr)")
+                    } else {
+                        self.logger.debug("Non-zero exit (\(process.terminationStatus)): \(commandLabel)")
+                    }
                     throw ProcessError.nonZeroExit(
                         command: commandLabel,
                         code: process.terminationStatus,
@@ -246,6 +252,7 @@ actor ProcessRunner {
             home + "/.bun/bin",
             home + "/.local/bin",
             home + "/.cargo/bin",
+            home + "/Library/pnpm/bin",
             "/usr/local/bin",
             "/usr/bin",
             "/bin",
