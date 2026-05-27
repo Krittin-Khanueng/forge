@@ -79,7 +79,7 @@ actor ProcessRunner {
                 )
             }
         } onCancel: {
-            process.terminate()
+            if process.isRunning { process.terminate() }
         }
     }
 
@@ -130,7 +130,7 @@ actor ProcessRunner {
             timeoutTask = Task {
                 try? await Task.sleep(for: timeout)
                 guard !Task.isCancelled else { return }
-                process.terminate()
+                if process.isRunning { process.terminate() }
                 continuation.finish(
                     throwing: ProcessError.timeout(command: commandLabel, after: timeout)
                 )
@@ -140,7 +140,7 @@ actor ProcessRunner {
         let _timeoutTask = timeoutTask
         continuation.onTermination = { @Sendable _ in
             _timeoutTask?.cancel()
-            process.terminate()
+            if process.isRunning { process.terminate() }
         }
 
         do {
@@ -181,12 +181,12 @@ actor ProcessRunner {
                 )
             }
         } catch is CancellationError {
-            process.terminate()
+            if process.isRunning { process.terminate() }
             timeoutTask?.cancel()
             continuation.finish(throwing: ProcessError.cancelled)
         } catch {
             logger.error("Stream failed: \(commandLabel) — \(error.localizedDescription)")
-            process.terminate()
+            if process.isRunning { process.terminate() }
             timeoutTask?.cancel()
             continuation.finish(throwing: error)
         }
@@ -243,7 +243,7 @@ actor ProcessRunner {
         return try await withThrowingTaskGroup(of: T.self) { group in
             group.addTask {
                 try await Task.sleep(for: timeout)
-                process.terminate()
+                if process.isRunning { process.terminate() }
                 throw ProcessError.timeout(command: commandLabel, after: timeout)
             }
 
