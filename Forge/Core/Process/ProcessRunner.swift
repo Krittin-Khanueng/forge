@@ -45,10 +45,11 @@ actor ProcessRunner {
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
 
-        return try await withTaskCancellationHandler {
-            try await withProcessTimeout(options.timeout, commandLabel: commandLabel, process: process) {
-                try process.run()
+        try process.run()
+        let pid = process.processIdentifier
 
+        return try await withTaskCancellationHandler {
+            try await withProcessTimeout(options.timeout, commandLabel: commandLabel, pid: pid) {
                 async let stdoutData = Self.drain(stdoutPipe.fileHandleForReading)
                 async let stderrData = Self.drain(stderrPipe.fileHandleForReading)
                 let (out, err) = await (stdoutData, stderrData)
@@ -79,7 +80,7 @@ actor ProcessRunner {
                 )
             }
         } onCancel: {
-            if process.isRunning { process.terminate() }
+            kill(pid, SIGTERM)
         }
     }
 
@@ -125,12 +126,15 @@ actor ProcessRunner {
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
 
+        try! process.run()
+        let pid = process.processIdentifier
+
         var timeoutTask: Task<Void, Never>?
         if let timeout = options.timeout {
             timeoutTask = Task {
                 try? await Task.sleep(for: timeout)
                 guard !Task.isCancelled else { return }
-                if process.isRunning { process.terminate() }
+                kill(pid, SIGTERM)
                 continuation.finish(
                     throwing: ProcessError.timeout(command: commandLabel, after: timeout)
                 )
@@ -140,12 +144,10 @@ actor ProcessRunner {
         let _timeoutTask = timeoutTask
         continuation.onTermination = { @Sendable _ in
             _timeoutTask?.cancel()
-            if process.isRunning { process.terminate() }
+            kill(pid, SIGTERM)
         }
 
         do {
-            try process.run()
-
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
                     for try await line in stdoutPipe.fileHandleForReading.bytes.lines {
@@ -181,12 +183,12 @@ actor ProcessRunner {
                 )
             }
         } catch is CancellationError {
-            if process.isRunning { process.terminate() }
+            kill(pid, SIGTERM)
             timeoutTask?.cancel()
             continuation.finish(throwing: ProcessError.cancelled)
         } catch {
             logger.error("Stream failed: \(commandLabel) — \(error.localizedDescription)")
-            if process.isRunning { process.terminate() }
+            kill(pid, SIGTERM)
             timeoutTask?.cancel()
             continuation.finish(throwing: error)
         }
@@ -275,7 +277,7 @@ actor ProcessRunner {
     private func withProcessTimeout<T: Sendable>(
         _ timeout: Duration?,
         commandLabel: String,
-        process: Process,
+        pid: Int32,
         operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
         guard let timeout else {
@@ -285,7 +287,7 @@ actor ProcessRunner {
         return try await withThrowingTaskGroup(of: T.self) { group in
             group.addTask {
                 try await Task.sleep(for: timeout)
-                if process.isRunning { process.terminate() }
+                kill(pid, SIGTERM)
                 throw ProcessError.timeout(command: commandLabel, after: timeout)
             }
 
