@@ -4,96 +4,92 @@ import OSLog
 @MainActor
 @Observable
 final class PackagesViewModel {
-    var packages: [Package] = []
     var isLoading = false
     var error: String?
     var selectedManager: PackageManagerKind? = nil
     var searchText = ""
+    private(set) var debouncedSearchText = ""
     var updatingPackageIDs: Set<Package.ID> = []
     var uninstallingPackageIDs: Set<Package.ID> = []
     var updateError: String?
+
+    var packages: [Package] {
+        refreshService.packages
+    }
+
+    var packageCount: Int {
+        refreshService.packages.count
+    }
 
     var filteredPackages: [Package] {
         packages.filter { pkg in
             if let manager = selectedManager, pkg.manager != manager {
                 return false
             }
-            if !searchText.isEmpty {
-                return pkg.name.localizedCaseInsensitiveContains(searchText)
+            if !debouncedSearchText.isEmpty {
+                return pkg.name.localizedCaseInsensitiveContains(debouncedSearchText)
             }
             return true
         }
     }
 
+    private let refreshService: PackageRefreshService
     private let registry = PackageManagerRegistry.shared
     private let cache = PackageCache(container: StorageStack.shared.container)
     private let activityRepo = ActivityRepository(container: StorageStack.shared.container)
     private let logger = Logger.ui
+    private var searchDebounceTask: Task<Void, Never>?
+    private var hasLoadedOnce = false
+
+    init(refreshService: PackageRefreshService = .shared) {
+        self.refreshService = refreshService
+    }
+
+    func setSearchText(_ text: String) {
+        searchText = text
+        searchDebounceTask?.cancel()
+        if text.isEmpty {
+            debouncedSearchText = ""
+            return
+        }
+        searchDebounceTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            debouncedSearchText = text
+        }
+    }
+
+    func loadIfNeeded() async {
+        guard !hasLoadedOnce else { return }
+        await load()
+    }
 
     func load() async {
-        if let cached = try? cache.all(manager: nil), !cached.isEmpty {
-            packages = cached
+        let showFullScreenLoading = !hasLoadedOnce && packages.isEmpty
+        isLoading = showFullScreenLoading
+        error = nil
+
+        refreshService.applyCachedPackages()
+
+        defer {
+            isLoading = false
+            hasLoadedOnce = true
         }
-        await refresh()
+
+        await refreshService.refreshIfNeeded()
+        if let refreshError = refreshService.error {
+            error = refreshError
+        }
     }
 
     func refresh() async {
-        isLoading = true
+        isLoading = packages.isEmpty
         error = nil
         defer { isLoading = false }
 
-        var all: [Package] = []
-        var failedManagers: [String] = []
-
-        for kind in registry.detectedKinds {
-            guard let manager = registry.manager(kind) else { continue }
-            do {
-                logger.info("Loading installed packages: \(kind.displayName)")
-                let pkgs = try await manager.installedPackages()
-                logger.info("Loaded installed packages: \(kind.displayName), count=\(pkgs.count)")
-                all.append(contentsOf: pkgs)
-            } catch {
-                failedManagers.append(kind.displayName)
-                logger.error("Failed loading installed packages: \(kind.displayName), error=\(error.localizedDescription)")
-            }
-        }
-
-        for kind in registry.detectedKinds {
-            guard let manager = registry.manager(kind) else { continue }
-            do {
-                logger.info("Loading outdated packages: \(kind.displayName)")
-                let outdated = try await manager.outdatedPackages()
-                logger.info("Loaded outdated packages: \(kind.displayName), count=\(outdated.count)")
-                for outdatedPkg in outdated {
-                    if let idx = all.firstIndex(where: { $0.id == outdatedPkg.id }) {
-                        all[idx] = Package(
-                            name: all[idx].name,
-                            installedVersion: all[idx].installedVersion,
-                            latestVersion: outdatedPkg.latestVersion,
-                            manager: all[idx].manager,
-                            installPath: all[idx].installPath,
-                            description: all[idx].description,
-                            homepage: all[idx].homepage
-                        )
-                    }
-                }
-            } catch {
-                logger.warning("Failed loading outdated packages: \(kind.displayName), error=\(error.localizedDescription)")
-            }
-        }
-
-        packages = all.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-
-        try? cache.upsert(packages)
-        activityRepo.record(
-            kind: "refresh",
-            title: "Packages refreshed",
-            subtitle: "\(packages.count) packages from \(registry.detectedKinds.count) managers",
-            manager: nil
-        )
-
-        if !failedManagers.isEmpty {
-            self.error = "Some package managers failed: \(failedManagers.joined(separator: ", "))"
+        await refreshService.refresh(force: true)
+        if let refreshError = refreshService.error {
+            error = refreshError
         }
     }
 
@@ -132,7 +128,7 @@ final class PackagesViewModel {
                 subtitle: package.manager.displayName,
                 manager: package.manager
             )
-            await refresh()
+            await refreshService.refreshManager(package.manager)
         } catch {
             updateError = "Failed to update \(package.name): \(error.localizedDescription)"
             activityRepo.record(
@@ -158,7 +154,6 @@ final class PackagesViewModel {
         do {
             logger.info("Uninstalling package: \(package.name), manager=\(package.manager.displayName)")
             try await manager.uninstall(package.name)
-            packages.removeAll { $0.id == package.id }
             try? cache.remove(package)
             activityRepo.record(
                 kind: "uninstall",
@@ -166,7 +161,7 @@ final class PackagesViewModel {
                 subtitle: package.manager.displayName,
                 manager: package.manager
             )
-            await refresh()
+            await refreshService.refreshManager(package.manager)
         } catch {
             updateError = "Failed to uninstall \(package.name): \(error.localizedDescription)"
             activityRepo.record(

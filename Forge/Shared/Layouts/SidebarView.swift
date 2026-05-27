@@ -34,14 +34,20 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
 
     @MainActor
     @ViewBuilder
-    var detailView: some View {
+    func detailView(env: AppEnvironment) -> some View {
         switch self {
-        case .dashboard:    DashboardView()
-        case .packages:     PackagesView()
-        case .updates:      UpdatesView()
-        case .environments: EnvironmentsView()
-        case .search:       SearchView()
-        case .settings:     SettingsView()
+        case .dashboard:
+            DashboardView(viewModel: env.dashboardViewModel)
+        case .packages:
+            PackagesView(viewModel: env.packagesViewModel)
+        case .updates:
+            UpdatesView(viewModel: env.updatesViewModel)
+        case .environments:
+            EnvironmentsView(service: env.environmentService)
+        case .search:
+            SearchView()
+        case .settings:
+            SettingsView()
         }
     }
 }
@@ -79,6 +85,14 @@ struct SidebarView: View {
             Section("App") {
                 Label(SidebarItem.settings.title, systemImage: SidebarItem.settings.systemImage)
                     .tag(SidebarItem.settings)
+            }
+
+            Section {
+                Label("Command Palette", systemImage: "command")
+                    .foregroundStyle(.secondary)
+                Text("Press ⌘K to search and install packages.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
         }
         .listStyle(.sidebar)

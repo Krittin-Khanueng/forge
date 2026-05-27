@@ -12,7 +12,7 @@ struct SectionHeader<Trailing: View>: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.subheadline)
+                .font(ForgeTheme.Font.section)
                 .foregroundStyle(.secondary)
             Spacer()
             trailing()

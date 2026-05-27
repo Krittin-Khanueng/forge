@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct UpdatesView: View {
-    @State private var viewModel = UpdatesViewModel()
+    @Bindable var viewModel: UpdatesViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,9 +21,17 @@ struct UpdatesView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if let error = viewModel.error, viewModel.totalOutdated > 0 {
+                ErrorState(message: error) {
+                    Task { await viewModel.refresh() }
+                }
+                .padding(ForgeTheme.Spacing.l)
+            }
         }
+        .navigationTitle("Updates")
         .task {
-            await viewModel.load()
+            await viewModel.loadIfNeeded()
         }
     }
 
@@ -39,7 +47,7 @@ struct UpdatesView: View {
 
             Spacer()
 
-            if let error = viewModel.error {
+            if let error = viewModel.error, viewModel.totalOutdated == 0 {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
@@ -48,11 +56,11 @@ struct UpdatesView: View {
             }
 
             Button {
-                Task { await viewModel.load() }
+                Task { await viewModel.refresh() }
             } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
-            .disabled(viewModel.isLoading || viewModel.isUpdating)
+            .disabled(viewModel.isLoading || viewModel.isRefreshing || viewModel.isUpdating)
 
             Button {
                 Task { await viewModel.updateAllOutdated() }
@@ -65,13 +73,21 @@ struct UpdatesView: View {
     }
 
     private var emptyView: some View {
-        EmptyState(
-            icon: "checkmark.seal",
-            title: "Everything Updated",
-            subtitle: "No outdated packages were found.",
-            actionLabel: "Refresh"
-        ) {
-            Task { await viewModel.load() }
+        VStack(spacing: ForgeTheme.Spacing.l) {
+            if let error = viewModel.error {
+                ErrorState(message: error) {
+                    Task { await viewModel.refresh() }
+                }
+            } else {
+                EmptyState(
+                    icon: "checkmark.seal",
+                    title: "Everything Updated",
+                    subtitle: "No outdated packages were found.",
+                    actionLabel: "Refresh"
+                ) {
+                    Task { await viewModel.refresh() }
+                }
+            }
         }
     }
 

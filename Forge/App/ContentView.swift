@@ -13,7 +13,7 @@ struct ContentView: View {
                 ForgeTheme.Palette.appBackground
                     .ignoresSafeArea()
                 if let item = selection {
-                    item.detailView
+                    item.detailView(env: appEnv)
                 } else {
                     ContentUnavailableView("Select an item", systemImage: "sidebar.left")
                 }
@@ -21,9 +21,13 @@ struct ContentView: View {
         }
         .frame(minWidth: 1100, minHeight: 700)
         .environment(appEnv)
+        .preferredColorScheme(appEnv.preferredColorScheme)
         .task {
             await appEnv.bootstrap()
             BackgroundScheduler.shared.start()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .forgeSettingsChanged)) { _ in
+            appEnv.reloadAppearance()
         }
         .onAppear {
             appEnv.paletteMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in

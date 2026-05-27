@@ -65,6 +65,7 @@ final class SearchService {
         do {
             try await manager.install(name)
             logger.info("Installed \(name) via \(kind.displayName)")
+            await PackageRefreshService.shared.refreshManager(kind)
         } catch {
             self.error = error.localizedDescription
             logger.error("Install failed for \(name): \(error.localizedDescription)")

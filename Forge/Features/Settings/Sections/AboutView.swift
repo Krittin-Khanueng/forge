@@ -11,10 +11,10 @@ struct AboutView: View {
     var body: some View {
         Form {
             Section {
-                VStack(spacing: 12) {
+                VStack(spacing: ForgeTheme.Spacing.m) {
                     Image(systemName: "hammer.fill")
                         .font(.system(size: 48))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(ForgeTheme.Palette.forgeOrange)
                     Text("Forge")
                         .font(.title)
                         .fontWeight(.bold)
@@ -31,11 +31,8 @@ struct AboutView: View {
 
             Section("Links") {
                 Link("Source Code", destination: URL(string: "https://github.com/forge/forge")!)
-                    .foregroundStyle(.blue)
                 Link("Documentation", destination: URL(string: "https://docs.forge.dev")!)
-                    .foregroundStyle(.blue)
                 Link("Report an Issue", destination: URL(string: "https://github.com/forge/forge/issues")!)
-                    .foregroundStyle(.blue)
             }
 
             Section("Credits") {

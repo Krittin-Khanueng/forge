@@ -27,24 +27,30 @@ struct SearchView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, ForgeTheme.Spacing.l)
+            .padding(.vertical, ForgeTheme.Spacing.m)
             .background(.regularMaterial)
 
             Divider()
 
             if env.searchService.query.isEmpty {
-                ContentUnavailableView(
-                    "Search Packages",
-                    systemImage: "magnifyingglass",
-                    description: Text("Search installed and available packages across all package managers")
+                EmptyState(
+                    icon: "magnifyingglass",
+                    title: "Search Packages",
+                    subtitle: "Search installed and available packages across all package managers. Press ⌘K for the command palette."
                 )
             } else {
                 List {
                     if !env.searchService.localResults.isEmpty {
                         Section("Installed") {
                             ForEach(env.searchService.localResults) { hit in
-                                SearchHitRow(hit: hit, service: env.searchService)
+                                SearchResultRow(
+                                    hit: hit,
+                                    showsInstallButton: true,
+                                    onInstall: {
+                                        Task { await env.searchService.install(hit.name, manager: hit.manager) }
+                                    }
+                                )
                             }
                         }
                     }
@@ -68,7 +74,13 @@ struct SearchView: View {
                                 .listRowSeparator(.hidden)
                         } else {
                             ForEach(env.searchService.remoteResults.filter { !$0.isInstalled }) { hit in
-                                SearchHitRow(hit: hit, service: env.searchService)
+                                SearchResultRow(
+                                    hit: hit,
+                                    showsInstallButton: true,
+                                    onInstall: {
+                                        Task { await env.searchService.install(hit.name, manager: hit.manager) }
+                                    }
+                                )
                             }
                         }
                     }
@@ -77,70 +89,13 @@ struct SearchView: View {
             }
 
             if let error = env.searchService.error {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                ErrorState(message: error) {
+                    Task { await env.searchService.updateQuery(env.searchService.query) }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(.ultraThinMaterial)
+                .padding(ForgeTheme.Spacing.m)
             }
         }
+        .navigationTitle("Search")
         .onAppear { isFocused = true }
-    }
-}
-
-private struct SearchHitRow: View {
-    let hit: SearchHit
-    let service: SearchService
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: hit.manager.systemImage)
-                .frame(width: 24)
-                .foregroundStyle(.secondary)
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(hit.name)
-                        .fontWeight(.medium)
-                    if hit.isInstalled, let version = hit.installedVersion {
-                        Text(version)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 1)
-                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
-                    }
-                }
-                if let description = hit.description {
-                    Text(description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer()
-
-            Text(hit.manager.displayName)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
-
-            if !hit.isInstalled {
-                Button("Install") {
-                    Task { await service.install(hit.name, manager: hit.manager) }
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-            }
-        }
-        .padding(.vertical, 4)
     }
 }

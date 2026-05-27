@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @State private var viewModel = DashboardViewModel()
+    @Bindable var viewModel: DashboardViewModel
 
     private var summaryColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 220), spacing: ForgeTheme.Spacing.l)]
@@ -39,7 +39,8 @@ struct DashboardView: View {
                 .disabled(viewModel.isLoading || viewModel.isRefreshing)
             }
         }
-        .task { await viewModel.load() }
+        .navigationTitle("Dashboard")
+        .task { await viewModel.loadIfNeeded() }
     }
 
     private var dashboardHeader: some View {

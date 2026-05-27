@@ -14,12 +14,11 @@ struct PackageRowDetail: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: ForgeTheme.Spacing.l) {
+                VStack(alignment: .leading, spacing: ForgeTheme.Spacing.xs) {
                     Text(package.name)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    Text(package.manager.displayName)
+                        .font(ForgeTheme.Font.compactTitle)
+                    Label(package.manager.displayName, systemImage: package.manager.systemImage)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -27,36 +26,39 @@ struct PackageRowDetail: View {
                 Divider()
 
                 if let description = package.description, !description.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: ForgeTheme.Spacing.xs) {
                         Text("Description")
-                            .font(.headline)
+                            .font(ForgeTheme.Font.section)
                         Text(description)
                             .font(.body)
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Version")
-                        .font(.headline)
-                    HStack {
-                        Text("Installed:")
-                            .foregroundStyle(.secondary)
-                        Text(package.installedVersion ?? "—")
+                Card {
+                    VStack(alignment: .leading, spacing: ForgeTheme.Spacing.s) {
+                        Text("Version")
+                            .font(ForgeTheme.Font.section)
+                        HStack {
+                            Text("Installed:")
+                                .foregroundStyle(.secondary)
+                            Text(package.installedVersion ?? "—")
+                        }
+                        .font(.body)
+                        HStack {
+                            Text("Latest:")
+                                .foregroundStyle(.secondary)
+                            Text(package.latestVersion ?? "—")
+                        }
+                        .font(.body)
+                        StatusBadge(status: package.status)
                     }
-                    .font(.body)
-                    HStack {
-                        Text("Latest:")
-                            .foregroundStyle(.secondary)
-                        Text(package.latestVersion ?? "—")
-                    }
-                    .font(.body)
                 }
 
                 if let homepage = package.homepage {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: ForgeTheme.Spacing.xs) {
                         Text("Homepage")
-                            .font(.headline)
+                            .font(ForgeTheme.Font.section)
                         Link(destination: homepage) {
                             Label(homepage.absoluteString, systemImage: "arrow.up.forward")
                                 .font(.body)
@@ -66,38 +68,30 @@ struct PackageRowDetail: View {
                 }
 
                 if let installPath = package.installPath {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: ForgeTheme.Spacing.xs) {
                         Text("Install Path")
-                            .font(.headline)
+                            .font(ForgeTheme.Font.section)
                         Text(installPath)
-                            .font(.body.monospaced())
+                            .font(ForgeTheme.Font.mono)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 Divider()
 
-                HStack(spacing: 12) {
-                    Button(action: onUpdate) {
-                        if isUpdating {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .frame(width: 16, height: 16)
-                        }
-                        Label(isUpdating ? "Updating" : "Update", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .disabled(!canUpdate || isUpdating)
+                VStack(spacing: ForgeTheme.Spacing.s) {
+                    PrimaryButton(
+                        label: isUpdating ? "Updating" : "Update",
+                        systemImage: "arrow.triangle.2.circlepath",
+                        isLoading: isUpdating,
+                        action: onUpdate
+                    )
 
-                    Button(role: .destructive) {
-                        isConfirmingUninstall = true
-                    } label: {
-                        if isUninstalling {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .frame(width: 16, height: 16)
-                        }
-                        Label(isUninstalling ? "Uninstalling" : "Uninstall", systemImage: "trash")
-                    }
+                    SecondaryButton(
+                        label: isUninstalling ? "Uninstalling" : "Uninstall",
+                        systemImage: "trash",
+                        action: { isConfirmingUninstall = true }
+                    )
                     .disabled(!canUninstall || isUpdating || isUninstalling)
                 }
 
@@ -108,12 +102,10 @@ struct PackageRowDetail: View {
                 }
 
                 if let updateError {
-                    Text(updateError)
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                    ErrorState(message: updateError, retryAction: nil)
                 }
             }
-            .padding()
+            .padding(ForgeTheme.Spacing.l)
         }
         .confirmationDialog(
             "Uninstall \(package.name)?",

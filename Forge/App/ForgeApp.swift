@@ -3,8 +3,6 @@ import SwiftData
 
 @main
 struct ForgeApp: App {
-    @State private var repo = SettingsRepository(container: StorageStack.shared.container)
-
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -27,12 +27,22 @@ struct GeneralSettingsView: View {
                 }
             }
 
+            Section("Shortcuts") {
+                LabeledContent("Command Palette") {
+                    Text("⌘K")
+                        .foregroundStyle(.secondary)
+                }
+                Text("Search and install packages from anywhere in the app.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Menu Bar") {
                 Toggle("Show Menu Bar Icon", isOn: Binding(
                     get: { viewModel.settings.showMenuBarIcon },
                     set: { newValue in viewModel.update { $0.showMenuBarIcon = newValue } }
                 ))
-                Text("Toggle this off then reopen app to hide the icon.")
+                Text("Menu bar visibility is saved for a future app restart.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

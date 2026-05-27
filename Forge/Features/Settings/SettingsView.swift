@@ -30,6 +30,7 @@ struct SettingsView: View {
                 .tag(Tab.about)
         }
         .frame(minWidth: 500, minHeight: 400)
+        .navigationTitle("Settings")
     }
 }
 
@@ -45,5 +46,6 @@ final class SettingsViewModel {
 
     func update(_ mutation: (AppSettings) -> Void) {
         repo.update(mutation)
+        NotificationCenter.default.post(name: .forgeSettingsChanged, object: nil)
     }
 }

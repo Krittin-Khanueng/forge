@@ -10,20 +10,23 @@ final class PackageCache {
     }
 
     func upsert(_ packages: [Package]) throws {
-        for pkg in packages {
-            let id = pkg.id
-            var descriptor = FetchDescriptor<CachedPackage>(predicate: #Predicate { $0.id == id })
-            descriptor.fetchLimit = 1
+        guard !packages.isEmpty else { return }
 
-            if let existing = try context.fetch(descriptor).first {
-                existing.name = pkg.name
-                existing.installedVersion = pkg.installedVersion
-                existing.latestVersion = pkg.latestVersion
-                existing.managerRaw = pkg.manager.rawValue
-                existing.lastSeen = Date()
+        let existing = try context.fetch(FetchDescriptor<CachedPackage>())
+        var byID = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
+        let now = Date()
+
+        for pkg in packages {
+            if let cached = byID[pkg.id] {
+                cached.name = pkg.name
+                cached.installedVersion = pkg.installedVersion
+                cached.latestVersion = pkg.latestVersion
+                cached.managerRaw = pkg.manager.rawValue
+                cached.lastSeen = now
             } else {
-                let cached = CachedPackage(from: pkg)
+                let cached = CachedPackage(from: pkg, lastSeen: now)
                 context.insert(cached)
+                byID[pkg.id] = cached
             }
         }
         try context.save()

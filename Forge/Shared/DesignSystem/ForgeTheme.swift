@@ -13,7 +13,7 @@ enum ForgeTheme {
     enum Radius {
         static let s: CGFloat = 6
         static let m: CGFloat = 8
-        static let l: CGFloat = 8
+        static let l: CGFloat = 14
     }
 
     enum Font {

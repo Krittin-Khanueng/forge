@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct EnvironmentsView: View {
-    @State private var service = EnvironmentService()
+    @Bindable var service: EnvironmentService
     @State private var showInstallSheet = false
     @State private var installKind: RuntimeKind = .python
 
@@ -14,11 +14,11 @@ struct EnvironmentsView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
-            .padding(.top, 12)
+            .padding(.top, ForgeTheme.Spacing.m)
 
             if service.isLoading {
                 LoadingState("Loading environments...")
-                    .padding(.top, 80)
+                    .frame(maxHeight: .infinity)
             } else {
                 switch service.selectedTab {
                 case .python:
@@ -33,19 +33,25 @@ struct EnvironmentsView: View {
             }
 
             if let error = service.error {
-                HStack {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                    Text(error)
-                        .font(.caption)
+                ErrorState(message: error) {
+                    Task { await service.refresh() }
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 6)
-                .background(.ultraThinMaterial)
+                .padding(ForgeTheme.Spacing.l)
+            }
+        }
+        .navigationTitle("Environments")
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    Task { await service.refresh() }
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+                .disabled(service.isLoading)
             }
         }
         .task {
-            await service.refresh()
+            await service.loadIfNeeded()
         }
         .sheet(isPresented: $showInstallSheet) {
             InstallVersionSheet(kind: installKind) { version in
@@ -62,8 +68,11 @@ struct EnvironmentsView: View {
             if !driverAvailable {
                 emptyDriverView(kind: kind, hint: driverHint)
             } else if runtimes.isEmpty {
-                ContentUnavailableView("No \(kind.displayName) Versions", systemImage: kind.systemImage, description: Text("No installed versions found"))
-                    .padding(.top, 60)
+                EmptyState(
+                    icon: kind.systemImage,
+                    title: "No \(kind.displayName) Versions",
+                    subtitle: "No installed versions found for this runtime."
+                )
             } else {
                 if let active = runtimes.first(where: \.isActive) {
                     activeBanner(runtime: active)
@@ -85,7 +94,7 @@ struct EnvironmentsView: View {
                         }
                     }
                     TableColumn("") { runtime in
-                        HStack(spacing: 8) {
+                        HStack(spacing: ForgeTheme.Spacing.s) {
                             if !runtime.isActive {
                                 IconButton(systemImage: "checkmark.circle", tooltip: "Make Active") {
                                     Task { try? await service.setActive(runtime) }
@@ -111,7 +120,7 @@ struct EnvironmentsView: View {
                     .frame(width: 220)
                 }
                 .padding(.horizontal)
-                .padding(.vertical, 12)
+                .padding(.vertical, ForgeTheme.Spacing.m)
             }
 
             if let note = sourceNote {
@@ -121,7 +130,7 @@ struct EnvironmentsView: View {
                         .foregroundStyle(.tertiary)
                         .padding(.leading)
                 }
-                .padding(.bottom, 4)
+                .padding(.bottom, ForgeTheme.Spacing.xs)
             }
         }
     }
@@ -129,7 +138,7 @@ struct EnvironmentsView: View {
     private func activeBanner(runtime: RuntimeInfo) -> some View {
         HStack {
             Image(systemName: "checkmark.seal.fill")
-                .foregroundStyle(.green)
+                .foregroundStyle(ForgeTheme.Palette.forgeGreen)
             Text("Active: \(runtime.kind.displayName) \(runtime.version)")
                 .fontWeight(.medium)
             if let path = runtime.path {
@@ -142,24 +151,15 @@ struct EnvironmentsView: View {
             Spacer()
         }
         .padding(.horizontal)
-        .padding(.vertical, 10)
-        .background(.green.opacity(0.08))
+        .padding(.vertical, ForgeTheme.Spacing.m)
+        .background(ForgeTheme.Palette.forgeGreen.opacity(0.08))
     }
 
     private func emptyDriverView(kind: RuntimeKind, hint: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: kind.systemImage)
-                .font(.system(size: 40))
-                .foregroundStyle(.secondary)
-            Text("No \(kind.displayName) Manager Detected")
-                .font(.title3)
-                .fontWeight(.semibold)
-            Text(hint)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 80)
+        EmptyState(
+            icon: kind.systemImage,
+            title: "No \(kind.displayName) Manager Detected",
+            subtitle: hint
+        )
     }
 }

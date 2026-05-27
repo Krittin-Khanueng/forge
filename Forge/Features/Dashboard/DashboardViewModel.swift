@@ -13,20 +13,54 @@ final class DashboardViewModel {
     var lastLoadedAt: Date?
     var managerCounts: [PackageManagerKind: Int] = [:]
 
+    private let refreshService: PackageRefreshService
     private let registry = PackageManagerRegistry.shared
-    private let cache = PackageCache(container: StorageStack.shared.container)
     private let activityRepo = ActivityRepository(container: StorageStack.shared.container)
-    private let logger = Logger.ui
+    private var hasLoadedOnce = false
+
+    init(refreshService: PackageRefreshService = .shared) {
+        self.refreshService = refreshService
+    }
+
+    func loadIfNeeded() async {
+        applyStats(from: refreshService.packages)
+        guard !hasLoadedOnce else { return }
+        await load()
+    }
 
     func load() async {
         let hasExistingDashboard = totalPackages > 0 || !managerCounts.isEmpty || !recentActivity.isEmpty
         isLoading = !hasExistingDashboard
         isRefreshing = hasExistingDashboard
+
+        loadActivity()
+        detectedManagers = registry.detectedKinds
+
+        refreshService.applyCachedPackages()
+        applyStats(from: refreshService.packages)
+
         defer {
             isLoading = false
             isRefreshing = false
         }
 
+        await refreshService.refreshIfNeeded()
+        applyStats(from: refreshService.packages)
+        lastLoadedAt = refreshService.lastRefreshedAt ?? Date()
+        hasLoadedOnce = true
+    }
+
+    func refresh() async {
+        isRefreshing = true
+        defer { isRefreshing = false }
+
+        loadActivity()
+        await refreshService.refresh(force: true)
+        applyStats(from: refreshService.packages)
+        lastLoadedAt = refreshService.lastRefreshedAt ?? Date()
+    }
+
+    private func loadActivity() {
         let cachedActivity = activityRepo.recent(limit: 5)
         recentActivity = cachedActivity.map { entry in
             ActivityEntry(
@@ -36,62 +70,14 @@ final class DashboardViewModel {
                 subtitle: entry.subtitle
             )
         }
-
-        detectedManagers = registry.detectedKinds
-
-        var all: [Package] = []
-        var counts: [PackageManagerKind: Int] = [:]
-
-        for kind in registry.detectedKinds {
-            guard let manager = registry.manager(kind) else { continue }
-            do {
-                logger.info("Dashboard loading installed packages: \(kind.displayName)")
-                let pkgs = try await manager.installedPackages()
-                logger.info("Dashboard loaded installed packages: \(kind.displayName), count=\(pkgs.count)")
-                all.append(contentsOf: pkgs)
-                counts[kind] = pkgs.count
-            } catch {
-                logger.warning("Dashboard failed loading installed packages: \(kind.displayName), error=\(error.localizedDescription)")
-            }
-        }
-
-        managerCounts = counts
-
-        for kind in registry.detectedKinds {
-            guard let manager = registry.manager(kind) else { continue }
-            let outdated: [Package]
-            do {
-                logger.info("Dashboard loading outdated packages: \(kind.displayName)")
-                outdated = try await manager.outdatedPackages()
-                logger.info("Dashboard loaded outdated packages: \(kind.displayName), count=\(outdated.count)")
-            } catch {
-                logger.warning("Dashboard failed loading outdated packages: \(kind.displayName), error=\(error.localizedDescription)")
-                continue
-            }
-            for outdatedPkg in outdated {
-                if let idx = all.firstIndex(where: { $0.id == outdatedPkg.id }) {
-                    all[idx] = Package(
-                        name: all[idx].name,
-                        installedVersion: all[idx].installedVersion,
-                        latestVersion: outdatedPkg.latestVersion,
-                        manager: all[idx].manager,
-                        installPath: all[idx].installPath,
-                        description: all[idx].description,
-                        homepage: all[idx].homepage
-                    )
-                }
-            }
-        }
-
-        totalPackages = all.count
-        outdatedCount = all.filter { $0.isOutdated }.count
-
-        let orderedKinds = counts.keys.sorted { counts[$0] ?? 0 > counts[$1] ?? 0 }
-        detectedManagers = orderedKinds
-        lastLoadedAt = Date()
     }
 
-    func refresh() async {
-        await load()
+    private func applyStats(from packages: [Package]) {
+        let counts = PackageMergeHelpers.managerCounts(from: packages)
+        managerCounts = counts
+        totalPackages = packages.count
+        outdatedCount = packages.filter(\.isOutdated).count
+        let orderedKinds = counts.keys.sorted { counts[$0] ?? 0 > counts[$1] ?? 0 }
+        detectedManagers = orderedKinds.isEmpty ? registry.detectedKinds : orderedKinds
     }
 }

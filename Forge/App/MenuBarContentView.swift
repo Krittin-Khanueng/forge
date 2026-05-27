@@ -8,7 +8,7 @@ struct MenuBarContentView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Image(systemName: "hammer.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(ForgeTheme.Palette.forgeOrange)
                 Text("Forge")
                     .fontWeight(.semibold)
                 Spacer()
@@ -22,11 +22,19 @@ struct MenuBarContentView: View {
                 } label: {
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(ForgeTheme.Palette.forgeOrange)
                         Text("\(outdatedCount) outdated packages")
                         Image(systemName: "chevron.right")
                             .font(.caption)
                     }
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    NSApp.activate(ignoringOtherApps: true)
+                    openMainWindow()
+                } label: {
+                    Label("Open Updates", systemImage: "arrow.triangle.2.circlepath")
                 }
                 .buttonStyle(.plain)
             } else {
@@ -70,7 +78,7 @@ struct MenuBarContentView: View {
         .padding()
         .frame(width: 240)
         .onReceive(NotificationCenter.default.publisher(for: .forgeRefreshCompleted)) { _ in
-            outdatedCount = BackgroundScheduler.shared.outdatedCount
+            outdatedCount = PackageRefreshService.shared.outdatedCount
             lastRefresh = BackgroundScheduler.shared.lastRefresh
         }
     }

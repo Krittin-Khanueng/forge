@@ -19,8 +19,15 @@ final class EnvironmentService {
     private let logger = Logger.ui
 
     private var nodeDriver: (any EnvironmentDriverProtocol)?
+    private var hasLoadedOnce = false
 
     var nodeSource: String { nodeDriver?.source ?? "none" }
+
+    func loadIfNeeded() async {
+        guard !hasLoadedOnce else { return }
+        hasLoadedOnce = true
+        await refresh()
+    }
 
     func refresh() async {
         isLoading = true

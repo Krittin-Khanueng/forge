@@ -6,6 +6,7 @@ import OSLog
 final class UpdatesViewModel {
     var outdatedByManager: [PackageManagerKind: [Package]] = [:]
     var isLoading = false
+    var isRefreshing = false
     var updatingPackageIDs: Set<Package.ID> = []
     var updatingManagers: Set<PackageManagerKind> = []
     var error: String?
@@ -25,38 +26,53 @@ final class UpdatesViewModel {
         !updatingPackageIDs.isEmpty || !updatingManagers.isEmpty
     }
 
+    private let refreshService: PackageRefreshService
     private let registry = PackageManagerRegistry.shared
-    private let cache = PackageCache(container: StorageStack.shared.container)
     private let activityRepo = ActivityRepository(container: StorageStack.shared.container)
     private let logger = Logger.ui
+    private var hasLoadedOnce = false
+
+    init(refreshService: PackageRefreshService = .shared) {
+        self.refreshService = refreshService
+    }
+
+    func loadIfNeeded() async {
+        applyOutdated(from: refreshService.packages)
+        guard !hasLoadedOnce else { return }
+        await load()
+    }
 
     func load() async {
-        isLoading = true
+        let showFullScreenLoading = !hasLoadedOnce && totalOutdated == 0
+        isLoading = showFullScreenLoading
+        isRefreshing = hasLoadedOnce || totalOutdated > 0
         error = nil
-        defer { isLoading = false }
 
-        var next: [PackageManagerKind: [Package]] = [:]
-        var failedManagers: [String] = []
+        refreshService.applyCachedPackages()
+        applyOutdated(from: refreshService.packages)
 
-        for kind in registry.detectedKinds {
-            guard let manager = registry.manager(kind) else { continue }
-            do {
-                logger.info("Loading updates: \(kind.displayName)")
-                let packages = try await manager.outdatedPackages()
-                    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-                if !packages.isEmpty {
-                    next[kind] = packages
-                    try? cache.upsert(packages)
-                }
-            } catch {
-                failedManagers.append(kind.displayName)
-                logger.warning("Failed loading updates: \(kind.displayName), error=\(error.localizedDescription)")
-            }
+        defer {
+            isLoading = false
+            isRefreshing = false
+            hasLoadedOnce = true
         }
 
-        outdatedByManager = next
-        if !failedManagers.isEmpty {
-            error = "Some package managers failed: \(failedManagers.joined(separator: ", "))"
+        await refreshService.refreshIfNeeded()
+        applyOutdated(from: refreshService.packages)
+        if let refreshError = refreshService.error {
+            error = refreshError
+        }
+    }
+
+    func refresh() async {
+        isRefreshing = true
+        error = nil
+        defer { isRefreshing = false }
+
+        await refreshService.refresh(force: true)
+        applyOutdated(from: refreshService.packages)
+        if let refreshError = refreshService.error {
+            error = refreshError
         }
     }
 
@@ -83,7 +99,8 @@ final class UpdatesViewModel {
                 subtitle: package.manager.displayName,
                 manager: package.manager
             )
-            await refreshManager(package.manager)
+            await refreshService.refreshManager(package.manager)
+            applyOutdated(from: refreshService.packages)
         } catch {
             self.error = "Failed to update \(package.name): \(error.localizedDescription)"
             activityRepo.record(
@@ -115,7 +132,8 @@ final class UpdatesViewModel {
                 subtitle: nil,
                 manager: kind
             )
-            await refreshManager(kind)
+            await refreshService.refreshManager(kind)
+            applyOutdated(from: refreshService.packages)
         } catch {
             self.error = "Failed to update \(kind.displayName): \(error.localizedDescription)"
             activityRepo.record(
@@ -134,21 +152,7 @@ final class UpdatesViewModel {
         }
     }
 
-    private func refreshManager(_ kind: PackageManagerKind) async {
-        guard let manager = registry.manager(kind) else { return }
-
-        do {
-            let packages = try await manager.outdatedPackages()
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            if packages.isEmpty {
-                outdatedByManager[kind] = nil
-            } else {
-                outdatedByManager[kind] = packages
-                try? cache.upsert(packages)
-            }
-        } catch {
-            self.error = "Updated, but failed to refresh \(kind.displayName): \(error.localizedDescription)"
-            logger.warning("Failed refreshing updates after update: \(kind.displayName), error=\(error.localizedDescription)")
-        }
+    private func applyOutdated(from packages: [Package]) {
+        outdatedByManager = PackageMergeHelpers.outdatedByManager(from: packages)
     }
 }

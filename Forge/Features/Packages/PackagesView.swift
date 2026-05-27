@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PackagesView: View {
-    @State private var viewModel = PackagesViewModel()
+    @Bindable var viewModel: PackagesViewModel
     @State private var showInspector = false
     @State private var selectedPackageID: String?
     @State private var selectedPackage: Package?
@@ -55,11 +55,15 @@ struct PackagesView: View {
                 .pickerStyle(.menu)
             }
         }
-        .searchable(text: $viewModel.searchText, prompt: "Search packages...")
+        .searchable(text: Binding(
+            get: { viewModel.searchText },
+            set: { viewModel.setSearchText($0) }
+        ), prompt: "Search packages...")
+        .navigationTitle("Packages")
         .task {
-            await viewModel.load()
+            await viewModel.loadIfNeeded()
         }
-        .onChange(of: viewModel.packages) { _, _ in
+        .onChange(of: viewModel.packageCount) { _, _ in
             syncSelectedPackage()
         }
     }
