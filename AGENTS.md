@@ -11,19 +11,19 @@ See @README.md for project overview, features, requirements, and build commands.
 ## Architecture Notes
 
 ### Concurrency
-- **I/O & process execution**: `actor` — `ProcessRunner`, `BinaryResolver`, `DockerClient`, all package managers (BrewManager, NPMManager, etc.)
-- **UI state, ViewModels, repositories**: `@MainActor final class` — `AppEnvironment`, `DashboardViewModel`, `PackagesViewModel`, `SearchService`, `AIController`, `DockerStatusMonitor`, `EnvironmentService`
+- **I/O & process execution**: `actor` — `ProcessRunner`, `BinaryResolver`, all package managers (BrewManager, NPMManager, etc.)
+- **UI state, ViewModels, repositories**: `@MainActor final class` — `AppEnvironment`, `DashboardViewModel`, `PackagesViewModel`, `SearchService`, `EnvironmentService`
 - **Singletons**: `static let shared` on `@MainActor` types — `StorageStack`, `PackageManagerRegistry`, `BackgroundScheduler`, `SystemNotifier`
 - Bridge pattern: `@MainActor` types own `actor` references privately, call with `await`
 
 ### Service Initialization
 - No DI container; manual construction
-- `AppEnvironment` owns `SearchService`, `DockerStatusMonitor`, provides via SwiftUI `.environment()`
-- ViewModels own their own dependencies (e.g., `DashboardViewModel` creates `DockerClient()`, `PackageCache(container:)`)
+- `AppEnvironment` owns `SearchService`, provides via SwiftUI `.environment()`
+- ViewModels own their own dependencies (e.g., `DashboardViewModel` creates `PackageCache(container:)`)
 - Views create ViewModels via `@State private var viewModel = XYZViewModel()`
 
 ### Navigation
-- `NavigationSplitView` with `SidebarItem` enum (8 cases)
+- `NavigationSplitView` with `SidebarItem` enum
 - Each case provides `title`, `systemImage`, `@ViewBuilder var detailView`
 - Cmd+K opens `CommandPaletteWindow` (NSPanel, borderless, floating)
 - `MenuBarExtra` secondary scene for menu bar popover
@@ -38,13 +38,6 @@ See @README.md for project overview, features, requirements, and build commands.
 - 3 models: `CachedPackage`, `ActivityLogEntry`, `AppSettings`
 - 3 repositories: `SettingsRepository`, `PackageCache`, `ActivityRepository`
 - All repositories are `@MainActor`
-
-### AI Service
-- `AIService` protocol (Sendable) with `send()` and `stream()`
-- `AIController` (`@Observable @MainActor`) manages conversation
-- `AIToolExecutor` maps tool names to package manager/docker/environment methods
-- `AnyCodable` for flexible JSON schemas in tool definitions
-- Currently uses `MockAIService` (placeholder)
 
 ### Definitions
 - Replace `<state>` with appropriate state components for each feature

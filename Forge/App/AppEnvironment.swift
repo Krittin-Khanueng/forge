@@ -5,7 +5,6 @@ import OSLog
 final class AppEnvironment {
     let registry = PackageManagerRegistry.shared
     let searchService = SearchService()
-    let dockerMonitor = DockerStatusMonitor()
     private let logger = Logger.ui
 
     var isReady = false
@@ -17,7 +16,6 @@ final class AppEnvironment {
     func bootstrap() async {
         logger.info("Detecting package managers...")
         await registry.detectAll()
-        await dockerMonitor.refresh()
         isReady = true
         logger.info("Package manager detection complete. Found: \(self.registry.detectedKinds.map(\.displayName))")
     }

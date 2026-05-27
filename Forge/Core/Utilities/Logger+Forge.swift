@@ -13,5 +13,4 @@ extension Logger {
     static let bun = Logger(subsystem: subsystem, category: "bun")
     static let uv = Logger(subsystem: subsystem, category: "uv")
     static let cargo = Logger(subsystem: subsystem, category: "cargo")
-    static let ai = Logger(subsystem: subsystem, category: "ai")
 }

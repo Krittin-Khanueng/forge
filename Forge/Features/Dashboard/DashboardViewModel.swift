@@ -13,15 +13,9 @@ final class DashboardViewModel {
     var lastLoadedAt: Date?
     var managerCounts: [PackageManagerKind: Int] = [:]
 
-    var dockerAvailable = false
-    var dockerRunningContainers = 0
-    var dockerTotalContainers = 0
-    var dockerImageCount = 0
-
     private let registry = PackageManagerRegistry.shared
     private let cache = PackageCache(container: StorageStack.shared.container)
     private let activityRepo = ActivityRepository(container: StorageStack.shared.container)
-    private let dockerClient = DockerClient()
     private let logger = Logger.ui
 
     func load() async {
@@ -82,24 +76,9 @@ final class DashboardViewModel {
         let orderedKinds = counts.keys.sorted { counts[$0] ?? 0 > counts[$1] ?? 0 }
         detectedManagers = orderedKinds
         lastLoadedAt = Date()
-
-        await loadDockerStats()
     }
 
     func refresh() async {
         await load()
-    }
-
-    private func loadDockerStats() async {
-        dockerAvailable = await dockerClient.isAvailable()
-        guard dockerAvailable else { return }
-
-        if let containers = try? await dockerClient.containers(all: true) {
-            dockerRunningContainers = containers.filter(\.isRunning).count
-            dockerTotalContainers = containers.count
-        }
-        if let images = try? await dockerClient.images() {
-            dockerImageCount = images.count
-        }
     }
 }

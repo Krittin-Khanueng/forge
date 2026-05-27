@@ -5,7 +5,7 @@ import Testing
 struct AppShellTests {
     @Test("SidebarItem enum has all expected cases")
     func sidebarItemCases() {
-        #expect(SidebarItem.allCases.count == 8)
+        #expect(SidebarItem.allCases.count == 6)
         #expect(SidebarItem.dashboard.title == "Dashboard")
         #expect(SidebarItem.packages.title == "Packages")
     }

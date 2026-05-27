@@ -11,7 +11,7 @@ Swift 6, macOS 15+, Xcode 16+, SwiftUI, SwiftData, swift-testing
 | UI Observation | `@Observable @MainActor final class` |
 | I/O Services | `actor` (ProcessRunner, DockerClient, all managers) |
 | DI | Manual construction, no container |
-| Navigation | `NavigationSplitView` + `SidebarItem` enum (8 cases) |
+| Navigation | `NavigationSplitView` + `SidebarItem` enum |
 | Tests | `swift-testing` only (@Test, @Suite, #expect, #require) |
 | JSON Parsing | `--json` flags preferred, `JSONOutputDecoder` helper for mixed output |
 | App Sandbox | **Disabled** (needed to run CLI tools) |
@@ -28,13 +28,11 @@ Forge/App/
 └── MenuBarContentView.swift
 
 Forge/Core/
-├── Models/             # Package, Docker (Container/Image), ActivityEntry, PackageStatus
+├── Models/             # Package, ActivityEntry, PackageStatus
 ├── PackageManagers/    # Protocol + 7 managers (Brew, NPM, PNPM, Yarn, Bun, UV, Cargo)
 │   └── Helpers/        # JSONOutputDecoder
 ├── Process/            # ProcessRunner (actor), BinaryResolver (actor), ShellEscape, ProcessError
 ├── Services/
-│   ├── AI/             # AIService protocol, AIController, AIToolExecutor, ForgeTools, MockAIService
-│   ├── Docker/         # DockerClient (actor), DockerStatusMonitor (@MainActor)
 │   ├── Environments/   # EnvironmentService, drivers (Fnm, Volta, N, Rustup, Uv, Bun, System)
 │   ├── Notifications/  # SystemNotifier
 │   ├── SearchService.swift
@@ -46,7 +44,7 @@ Forge/Core/
 │   └── SecureStorage.swift # Keychain wrapper
 └── Utilities/          # Logger+Forge
 
-Forge/Features/         # UI per feature: Dashboard, Packages, Docker, AI, Search, Updates, Environments, Settings
+Forge/Features/         # UI per feature: Dashboard, Packages, Search, Updates, Environments, Settings
 Forge/Shared/
 ├── Components/         # Card, StatCard, StatusBadge, SectionHeader, IconButton, PrimaryButton, etc.
 ├── DesignSystem/       # ForgeTheme (spacing, radius, fonts)
@@ -106,6 +104,5 @@ for try await event in events { /* .stdout, .stderr */ }
 
 - `@Model` and `@Observable` are mutually exclusive — SwiftData models use `@Model` only, ViewModels use `@Observable`
 - `@Query` only works inside SwiftUI Views, never in ViewModels
-- Docker uses NDJSON format — decoded with `decodeNDJSON()` per-line
 - Homebrew `--json=v2` returns wrapped `{ "formulae": [...], "casks": [...] }`
 - NPM/pnpm may emit warnings before JSON — use `JSONOutputDecoder` to trim

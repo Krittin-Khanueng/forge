@@ -19,7 +19,6 @@ struct SettingsViewModelTests {
         #expect(settings.showInDock == true)
         #expect(settings.notifyOnOutdated == true)
         #expect(settings.theme == "system")
-        #expect(settings.aiProvider == "mock")
     }
 
     @Test("Persistence of auto-refresh settings")

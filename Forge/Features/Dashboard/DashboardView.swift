@@ -22,7 +22,7 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: ForgeTheme.Spacing.xl) {
                     dashboardHeader
                     summaryGrid
-                    managerAndDockerGrid
+                    managerSection
                     activitySection
                 }
                 .padding(ForgeTheme.Spacing.xxl)
@@ -146,14 +146,6 @@ struct DashboardView: View {
                 icon: "square.grid.2x2.fill",
                 tint: ForgeTheme.Palette.forgeTeal
             )
-
-            summaryTile(
-                title: "Docker",
-                value: dockerSummaryValue,
-                footnote: viewModel.dockerAvailable ? "\(viewModel.dockerImageCount) images" : "not detected",
-                icon: "square.stack.3d.up.fill",
-                tint: viewModel.dockerAvailable ? ForgeTheme.Palette.forgeGreen : Color.secondary
-            )
         }
     }
 
@@ -189,13 +181,6 @@ struct DashboardView: View {
         .overlay {
             RoundedRectangle(cornerRadius: ForgeTheme.Radius.l)
                 .stroke(ForgeTheme.Palette.hairline, lineWidth: 1)
-        }
-    }
-
-    private var managerAndDockerGrid: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 360), spacing: ForgeTheme.Spacing.l)], spacing: ForgeTheme.Spacing.l) {
-            managerSection
-            dockerSection
         }
     }
 
@@ -247,53 +232,6 @@ struct DashboardView: View {
                 .frame(width: 44, alignment: .trailing)
         }
         .padding(.vertical, ForgeTheme.Spacing.m)
-    }
-
-    private var dockerSection: some View {
-        VStack(alignment: .leading, spacing: ForgeTheme.Spacing.m) {
-            SectionHeader("Docker") {
-                statusPill(
-                    viewModel.dockerAvailable ? (viewModel.dockerRunningContainers > 0 ? "Running" : "Idle") : "Offline",
-                    tint: viewModel.dockerAvailable ? ForgeTheme.Palette.forgeGreen : Color.secondary
-                )
-            }
-
-            if viewModel.dockerAvailable {
-                HStack(spacing: ForgeTheme.Spacing.l) {
-                    dockerMetric("Containers", value: "\(viewModel.dockerRunningContainers)/\(viewModel.dockerTotalContainers)", tint: ForgeTheme.Palette.forgeBlue)
-                    Divider().frame(height: 48)
-                    dockerMetric("Images", value: "\(viewModel.dockerImageCount)", tint: ForgeTheme.Palette.forgeTeal)
-                }
-                .padding(.vertical, ForgeTheme.Spacing.s)
-            } else {
-                inlineEmptyState(icon: "square.stack.3d.up.slash", title: "Docker not available")
-            }
-
-            Spacer(minLength: 0)
-        }
-        .panelStyle()
-    }
-
-    private func dockerMetric(_ label: String, value: String, tint: Color) -> some View {
-        HStack(spacing: ForgeTheme.Spacing.m) {
-            Circle()
-                .fill(tint.opacity(0.14))
-                .frame(width: 38, height: 38)
-                .overlay {
-                    Circle()
-                        .fill(tint)
-                        .frame(width: 9, height: 9)
-                }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(value)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-        }
     }
 
     private var activitySection: some View {
@@ -390,11 +328,6 @@ struct DashboardView: View {
 
     private var healthColor: Color {
         viewModel.outdatedCount == 0 ? ForgeTheme.Palette.forgeGreen : ForgeTheme.Palette.forgeOrange
-    }
-
-    private var dockerSummaryValue: String {
-        guard viewModel.dockerAvailable else { return "Off" }
-        return "\(viewModel.dockerRunningContainers)/\(viewModel.dockerTotalContainers)"
     }
 
     private var topManagerLabel: String {

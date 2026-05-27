@@ -5,10 +5,8 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     case packages
     case updates
     case environments
-    case docker
     case search
     case settings
-    case ai
 
     var id: String { rawValue }
 
@@ -18,10 +16,8 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .packages:     return "Packages"
         case .updates:      return "Updates"
         case .environments: return "Environments"
-        case .docker:       return "Docker"
         case .search:       return "Search"
         case .settings:     return "Settings"
-        case .ai:           return "AI Assistant"
         }
     }
 
@@ -31,10 +27,8 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .packages:     return "shippingbox"
         case .updates:      return "arrow.triangle.2.circlepath"
         case .environments: return "externaldrive"
-        case .docker:       return "square.stack.3d.up"
         case .search:       return "magnifyingglass"
         case .settings:     return "gearshape"
-        case .ai:           return "sparkles"
         }
     }
 
@@ -46,10 +40,8 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .packages:     PackagesView()
         case .updates:      UpdatesView()
         case .environments: EnvironmentsView()
-        case .docker:       DockerView()
         case .search:       SearchView()
         case .settings:     SettingsView()
-        case .ai:           AIView()
         }
     }
 }
@@ -71,15 +63,14 @@ struct SidebarView: View {
             }
 
             Section("Manage") {
-                ForEach([SidebarItem.packages, .updates, .environments, .docker]) { item in
+                ForEach([SidebarItem.packages, .updates, .environments]) { item in
                     Label(item.title, systemImage: item.systemImage)
-                        .badge(item == .docker && env.dockerMonitor.runningCount > 0 ? env.dockerMonitor.runningCount : 0)
                         .tag(item)
                 }
             }
 
             Section("Tools") {
-                ForEach([SidebarItem.search, .ai]) { item in
+                ForEach([SidebarItem.search]) { item in
                     Label(item.title, systemImage: item.systemImage)
                         .tag(item)
                 }
@@ -88,12 +79,6 @@ struct SidebarView: View {
             Section("App") {
                 Label(SidebarItem.settings.title, systemImage: SidebarItem.settings.systemImage)
                     .tag(SidebarItem.settings)
-            }
-
-            Section {
-                DockerSidebarStatus(runningCount: env.dockerMonitor.runningCount)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
             }
         }
         .listStyle(.sidebar)
@@ -119,29 +104,6 @@ private struct SidebarBrandHeader: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-        }
-    }
-}
-
-private struct DockerSidebarStatus: View {
-    let runningCount: Int
-
-    var body: some View {
-        HStack(spacing: ForgeTheme.Spacing.s) {
-            Circle()
-                .fill(runningCount > 0 ? ForgeTheme.Palette.forgeGreen : Color.secondary.opacity(0.45))
-                .frame(width: 7, height: 7)
-            Text(runningCount > 0 ? "\(runningCount) Docker running" : "Docker idle")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, ForgeTheme.Spacing.s)
-        .padding(.vertical, ForgeTheme.Spacing.s)
-        .background(ForgeTheme.Palette.panelElevated.opacity(0.55), in: RoundedRectangle(cornerRadius: ForgeTheme.Radius.m))
-        .overlay {
-            RoundedRectangle(cornerRadius: ForgeTheme.Radius.m)
-                .stroke(ForgeTheme.Palette.hairline, lineWidth: 1)
         }
     }
 }
