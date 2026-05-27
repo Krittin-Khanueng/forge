@@ -13,6 +13,11 @@ struct Card<Content: View>: View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(padding)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: ForgeTheme.Radius.m))
+            .background(ForgeTheme.Palette.panelFill, in: RoundedRectangle(cornerRadius: ForgeTheme.Radius.m))
+            .overlay {
+                RoundedRectangle(cornerRadius: ForgeTheme.Radius.m)
+                    .stroke(ForgeTheme.Palette.hairline, lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
 }

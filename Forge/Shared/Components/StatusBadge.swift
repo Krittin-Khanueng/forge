@@ -4,28 +4,31 @@ struct StatusBadge: View {
     let status: PackageStatus
 
     var body: some View {
-        Text(status.label)
-            .font(.caption)
-            .fontWeight(.medium)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(backgroundColor)
-            .foregroundStyle(foregroundColor)
-            .clipShape(Capsule())
+        HStack(spacing: 5) {
+            Circle()
+                .fill(foregroundColor)
+                .frame(width: 5, height: 5)
+            Text(status.label)
+                .font(.caption.weight(.semibold))
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(backgroundColor, in: Capsule())
+        .foregroundStyle(foregroundColor)
     }
 
     private var backgroundColor: Color {
         switch status {
-        case .upToDate: return .green.opacity(0.15)
-        case .outdated: return .orange.opacity(0.15)
+        case .upToDate: return ForgeTheme.Palette.forgeGreen.opacity(0.14)
+        case .outdated: return ForgeTheme.Palette.forgeOrange.opacity(0.16)
         case .unknown:  return .secondary.opacity(0.15)
         }
     }
 
     private var foregroundColor: Color {
         switch status {
-        case .upToDate: return .green
-        case .outdated: return .orange
+        case .upToDate: return ForgeTheme.Palette.forgeGreen
+        case .outdated: return ForgeTheme.Palette.forgeOrange
         case .unknown:  return .secondary
         }
     }

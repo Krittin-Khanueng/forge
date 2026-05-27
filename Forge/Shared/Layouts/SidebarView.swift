@@ -60,6 +60,11 @@ struct SidebarView: View {
 
     var body: some View {
         List(selection: $selection) {
+            SidebarBrandHeader()
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .padding(.vertical, ForgeTheme.Spacing.s)
+
             Section("Overview") {
                 Label(SidebarItem.dashboard.title, systemImage: SidebarItem.dashboard.systemImage)
                     .tag(SidebarItem.dashboard)
@@ -84,7 +89,59 @@ struct SidebarView: View {
                 Label(SidebarItem.settings.title, systemImage: SidebarItem.settings.systemImage)
                     .tag(SidebarItem.settings)
             }
+
+            Section {
+                DockerSidebarStatus(runningCount: env.dockerMonitor.runningCount)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
         }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(ForgeTheme.Palette.panelFill.opacity(0.58))
         .navigationSplitViewColumnWidth(min: 180, ideal: 220)
+    }
+}
+
+private struct SidebarBrandHeader: View {
+    var body: some View {
+        HStack(spacing: ForgeTheme.Spacing.m) {
+            Image(systemName: "hammer.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .background(ForgeTheme.Palette.forgeOrange, in: RoundedRectangle(cornerRadius: ForgeTheme.Radius.m))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Forge")
+                    .font(.headline.weight(.semibold))
+                Text("Local toolchain")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct DockerSidebarStatus: View {
+    let runningCount: Int
+
+    var body: some View {
+        HStack(spacing: ForgeTheme.Spacing.s) {
+            Circle()
+                .fill(runningCount > 0 ? ForgeTheme.Palette.forgeGreen : Color.secondary.opacity(0.45))
+                .frame(width: 7, height: 7)
+            Text(runningCount > 0 ? "\(runningCount) Docker running" : "Docker idle")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, ForgeTheme.Spacing.s)
+        .padding(.vertical, ForgeTheme.Spacing.s)
+        .background(ForgeTheme.Palette.panelElevated.opacity(0.55), in: RoundedRectangle(cornerRadius: ForgeTheme.Radius.m))
+        .overlay {
+            RoundedRectangle(cornerRadius: ForgeTheme.Radius.m)
+                .stroke(ForgeTheme.Palette.hairline, lineWidth: 1)
+        }
     }
 }

@@ -9,8 +9,10 @@ final class DashboardViewModel {
     var detectedManagers: [PackageManagerKind] = []
     var recentActivity: [ActivityEntry] = []
     var isLoading = false
+    var isRefreshing = false
+    var lastLoadedAt: Date?
+    var managerCounts: [PackageManagerKind: Int] = [:]
 
-    // Docker
     var dockerAvailable = false
     var dockerRunningContainers = 0
     var dockerTotalContainers = 0
@@ -23,10 +25,15 @@ final class DashboardViewModel {
     private let logger = Logger.ui
 
     func load() async {
-        isLoading = true
-        defer { isLoading = false }
+        let hasExistingDashboard = totalPackages > 0 || !managerCounts.isEmpty || !recentActivity.isEmpty
+        isLoading = !hasExistingDashboard
+        isRefreshing = hasExistingDashboard
+        defer {
+            isLoading = false
+            isRefreshing = false
+        }
 
-        let cachedActivity = activityRepo.recent(limit: 10)
+        let cachedActivity = activityRepo.recent(limit: 5)
         recentActivity = cachedActivity.map { entry in
             ActivityEntry(
                 id: entry.id,
@@ -36,18 +43,20 @@ final class DashboardViewModel {
             )
         }
 
-        let cachedPackages = (try? cache.all(manager: nil)) ?? []
-        totalPackages = cachedPackages.count
-        outdatedCount = cachedPackages.filter { $0.isOutdated }.count
         detectedManagers = registry.detectedKinds
 
         var all: [Package] = []
+        var counts: [PackageManagerKind: Int] = [:]
+
         for kind in registry.detectedKinds {
             guard let manager = registry.manager(kind) else { continue }
             if let pkgs = try? await manager.installedPackages() {
                 all.append(contentsOf: pkgs)
+                counts[kind] = pkgs.count
             }
         }
+
+        managerCounts = counts
 
         for kind in registry.detectedKinds {
             guard let manager = registry.manager(kind) else { continue }
@@ -69,6 +78,10 @@ final class DashboardViewModel {
 
         totalPackages = all.count
         outdatedCount = all.filter { $0.isOutdated }.count
+
+        let orderedKinds = counts.keys.sorted { counts[$0] ?? 0 > counts[$1] ?? 0 }
+        detectedManagers = orderedKinds
+        lastLoadedAt = Date()
 
         await loadDockerStats()
     }

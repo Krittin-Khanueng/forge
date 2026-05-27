@@ -9,10 +9,14 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView(selection: $selection)
         } detail: {
-            if let item = selection {
-                item.detailView
-            } else {
-                ContentUnavailableView("Select an item", systemImage: "sidebar.left")
+            ZStack {
+                ForgeTheme.Palette.appBackground
+                    .ignoresSafeArea()
+                if let item = selection {
+                    item.detailView
+                } else {
+                    ContentUnavailableView("Select an item", systemImage: "sidebar.left")
+                }
             }
         }
         .frame(minWidth: 1100, minHeight: 700)

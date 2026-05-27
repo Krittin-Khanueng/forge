@@ -10,10 +10,12 @@ struct LoadingState: View {
     var body: some View {
         VStack(spacing: ForgeTheme.Spacing.m) {
             ProgressView()
+                .controlSize(.large)
             Text(message)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.callout.weight(.medium))
+                .foregroundStyle(ForgeTheme.Palette.inkMuted)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(ForgeTheme.Spacing.xxl)
     }
 }

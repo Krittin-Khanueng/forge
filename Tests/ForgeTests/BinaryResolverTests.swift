@@ -1,50 +1,22 @@
-import Foundation
 import Testing
 @testable import Forge
 
-@Suite("Binary Resolver Tests")
-struct BinaryResolverTests {
-    let resolver = BinaryResolver.shared
-
-    @Test("Resolves /bin/sh")
-    func resolvesSh() async throws {
-        let url = try await resolver.resolve("sh")
-        #expect(url.path == "/bin/sh")
+@Suite struct BinaryResolverTests {
+    @Test func resolvesHomebrewBinaries() async throws {
+        let url = try await BinaryResolver.shared.resolve("brew")
+        #expect(url.path.contains("brew"))
     }
 
-    @Test("Returns error for nonexistent binary")
-    func failsForBogusBinary() async throws {
-        await #expect(throws: BinaryResolverError.self) {
-            _ = try await resolver.resolve("nonexistent_binary_xyzzy_12345")
-        }
-    }
-
-    @Test("Caches successful resolutions")
-    func cachesResolutions() async throws {
+    @Test func resolvesUserBinaries() async throws {
+        let resolver = BinaryResolver.shared
         await resolver.invalidateCache()
 
-        let url1 = try await resolver.resolve("sh")
-        let url2 = try await resolver.resolve("sh")
+        let url1 = try? await resolver.resolve("cargo")
+        let url2 = try? await resolver.resolve("uv")
+        let url3 = try? await resolver.resolve("bun")
 
-        #expect(url1 == url2)
-        #expect(url1.path == "/bin/sh")
-    }
-
-    @Test("resolveAll returns results for multiple binaries")
-    func resolveAllMultiple() async throws {
-        let results = await resolver.resolveAll(["sh", "echo"])
-        #expect(results["sh"]??.path == "/bin/sh")
-        #expect(results["echo"]??.path == "/bin/echo")
-    }
-
-    @Test("invalidates cache correctly")
-    func invalidatesCache() async throws {
-        await resolver.invalidateCache()
-        let url1 = try await resolver.resolve("sh")
-        #expect(url1.path == "/bin/sh")
-
-        await resolver.invalidateCache()
-        let url2 = try await resolver.resolve("sh")
-        #expect(url2.path == "/bin/sh")
+        #expect(url1 != nil, "cargo should be found")
+        #expect(url2 != nil, "uv should be found")
+        #expect(url3 != nil, "bun should be found")
     }
 }

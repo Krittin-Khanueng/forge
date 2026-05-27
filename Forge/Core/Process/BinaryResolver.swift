@@ -6,12 +6,18 @@ actor BinaryResolver {
 
     private var cache: [String: URL] = [:]
 
-    private let hardcodedPrefixes: [String] = [
-        "/opt/homebrew/bin",
-        "/usr/local/bin",
-        "/usr/bin",
-        "/bin",
-    ]
+    private var hardcodedPrefixes: [String] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return [
+            "/opt/homebrew/bin",
+            home + "/.bun/bin",
+            home + "/.local/bin",
+            home + "/.cargo/bin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+        ]
+    }
 
     private let logger = Logger(subsystem: "com.forge.app", category: "process")
 
@@ -68,7 +74,10 @@ actor BinaryResolver {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/bin/zsh")
             process.arguments = ["-lc", "command -v \(name)"]
-            process.environment = ["PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"]
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            process.environment = [
+                "PATH": "/opt/homebrew/bin:\(home)/.bun/bin:\(home)/.local/bin:\(home)/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+            ]
 
             let pipe = Pipe()
             process.standardOutput = pipe
