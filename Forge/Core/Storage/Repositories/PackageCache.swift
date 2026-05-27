@@ -57,4 +57,15 @@ final class PackageCache {
         }
         try context.save()
     }
+
+    func remove(_ package: Package) throws {
+        let id = package.id
+        var descriptor = FetchDescriptor<CachedPackage>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+
+        if let existing = try context.fetch(descriptor).first {
+            context.delete(existing)
+            try context.save()
+        }
+    }
 }

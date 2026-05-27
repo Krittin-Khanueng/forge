@@ -9,6 +9,9 @@ final class PackagesViewModel {
     var error: String?
     var selectedManager: PackageManagerKind? = nil
     var searchText = ""
+    var updatingPackageIDs: Set<Package.ID> = []
+    var uninstallingPackageIDs: Set<Package.ID> = []
+    var updateError: String?
 
     var filteredPackages: [Package] {
         packages.filter { pkg in
@@ -91,6 +94,88 @@ final class PackagesViewModel {
 
         if !failedManagers.isEmpty {
             self.error = "Some package managers failed: \(failedManagers.joined(separator: ", "))"
+        }
+    }
+
+    func canUpdate(_ package: Package) -> Bool {
+        registry.manager(package.manager) != nil
+    }
+
+    func canUninstall(_ package: Package) -> Bool {
+        registry.manager(package.manager) != nil
+    }
+
+    func isUpdating(_ package: Package) -> Bool {
+        updatingPackageIDs.contains(package.id)
+    }
+
+    func isUninstalling(_ package: Package) -> Bool {
+        uninstallingPackageIDs.contains(package.id)
+    }
+
+    func update(_ package: Package) async {
+        guard let manager = registry.manager(package.manager) else {
+            updateError = "\(package.manager.displayName) is not available."
+            return
+        }
+
+        updatingPackageIDs.insert(package.id)
+        updateError = nil
+        defer { updatingPackageIDs.remove(package.id) }
+
+        do {
+            logger.info("Updating package: \(package.name), manager=\(package.manager.displayName)")
+            try await manager.update(package.name)
+            activityRepo.record(
+                kind: "update",
+                title: "Updated \(package.name)",
+                subtitle: package.manager.displayName,
+                manager: package.manager
+            )
+            await refresh()
+        } catch {
+            updateError = "Failed to update \(package.name): \(error.localizedDescription)"
+            activityRepo.record(
+                kind: "update_failed",
+                title: "Update failed: \(package.name)",
+                subtitle: error.localizedDescription,
+                manager: package.manager
+            )
+            logger.error("Failed updating package: \(package.name), error=\(error.localizedDescription)")
+        }
+    }
+
+    func uninstall(_ package: Package) async {
+        guard let manager = registry.manager(package.manager) else {
+            updateError = "\(package.manager.displayName) is not available."
+            return
+        }
+
+        uninstallingPackageIDs.insert(package.id)
+        updateError = nil
+        defer { uninstallingPackageIDs.remove(package.id) }
+
+        do {
+            logger.info("Uninstalling package: \(package.name), manager=\(package.manager.displayName)")
+            try await manager.uninstall(package.name)
+            packages.removeAll { $0.id == package.id }
+            try? cache.remove(package)
+            activityRepo.record(
+                kind: "uninstall",
+                title: "Uninstalled \(package.name)",
+                subtitle: package.manager.displayName,
+                manager: package.manager
+            )
+            await refresh()
+        } catch {
+            updateError = "Failed to uninstall \(package.name): \(error.localizedDescription)"
+            activityRepo.record(
+                kind: "uninstall_failed",
+                title: "Uninstall failed: \(package.name)",
+                subtitle: error.localizedDescription,
+                manager: package.manager
+            )
+            logger.error("Failed uninstalling package: \(package.name), error=\(error.localizedDescription)")
         }
     }
 }

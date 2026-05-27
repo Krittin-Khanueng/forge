@@ -2,6 +2,15 @@ import SwiftUI
 
 struct PackageRowDetail: View {
     let package: Package
+    var isUpdating = false
+    var isUninstalling = false
+    var canUpdate = true
+    var canUninstall = true
+    var updateError: String?
+    var onUpdate: @MainActor () -> Void = {}
+    var onUninstall: @MainActor () -> Void = {}
+
+    @State private var isConfirmingUninstall = false
 
     var body: some View {
         ScrollView {
@@ -69,20 +78,52 @@ struct PackageRowDetail: View {
                 Divider()
 
                 HStack(spacing: 12) {
-                    Button {
-                    } label: {
-                        Label("Update", systemImage: "arrow.triangle.2.circlepath")
+                    Button(action: onUpdate) {
+                        if isUpdating {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .frame(width: 16, height: 16)
+                        }
+                        Label(isUpdating ? "Updating" : "Update", systemImage: "arrow.triangle.2.circlepath")
                     }
-                    .disabled(true)
+                    .disabled(!canUpdate || isUpdating)
 
                     Button(role: .destructive) {
+                        isConfirmingUninstall = true
                     } label: {
-                        Label("Uninstall", systemImage: "trash")
+                        if isUninstalling {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .frame(width: 16, height: 16)
+                        }
+                        Label(isUninstalling ? "Uninstalling" : "Uninstall", systemImage: "trash")
                     }
-                    .disabled(true)
+                    .disabled(!canUninstall || isUpdating || isUninstalling)
+                }
+
+                if !canUpdate || !canUninstall {
+                    Text("This package manager is not currently available.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let updateError {
+                    Text(updateError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
                 }
             }
             .padding()
+        }
+        .confirmationDialog(
+            "Uninstall \(package.name)?",
+            isPresented: $isConfirmingUninstall,
+            titleVisibility: .visible
+        ) {
+            Button("Uninstall", role: .destructive, action: onUninstall)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will remove the package using \(package.manager.displayName).")
         }
     }
 }

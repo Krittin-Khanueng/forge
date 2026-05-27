@@ -20,7 +20,26 @@ struct PackagesView: View {
         }
         .inspector(isPresented: $showInspector) {
             if let selectedPackage {
-                PackageRowDetail(package: selectedPackage)
+                PackageRowDetail(
+                    package: selectedPackage,
+                    isUpdating: viewModel.isUpdating(selectedPackage),
+                    isUninstalling: viewModel.isUninstalling(selectedPackage),
+                    canUpdate: viewModel.canUpdate(selectedPackage),
+                    canUninstall: viewModel.canUninstall(selectedPackage),
+                    updateError: viewModel.updateError,
+                    onUpdate: {
+                        Task {
+                            await viewModel.update(selectedPackage)
+                            syncSelectedPackage()
+                        }
+                    },
+                    onUninstall: {
+                        Task {
+                            await viewModel.uninstall(selectedPackage)
+                            syncSelectedPackage()
+                        }
+                    }
+                )
             }
         }
         .inspectorColumnWidth(min: 240, ideal: 280, max: 360)
@@ -39,6 +58,9 @@ struct PackagesView: View {
         .searchable(text: $viewModel.searchText, prompt: "Search packages...")
         .task {
             await viewModel.load()
+        }
+        .onChange(of: viewModel.packages) { _, _ in
+            syncSelectedPackage()
         }
     }
 
@@ -103,8 +125,20 @@ struct PackagesView: View {
             .width(100)
         }
         .onChange(of: selectedPackageID) { _, newID in
-            selectedPackage = viewModel.filteredPackages.first { $0.id == newID }
+            syncSelectedPackage()
             showInspector = newID != nil
+        }
+    }
+
+    private func syncSelectedPackage() {
+        guard let selectedPackageID else {
+            selectedPackage = nil
+            return
+        }
+        selectedPackage = viewModel.filteredPackages.first { $0.id == selectedPackageID }
+        if selectedPackage == nil {
+            showInspector = false
+            self.selectedPackageID = nil
         }
     }
 }
