@@ -23,6 +23,48 @@ struct PNPMManagerTests {
         #expect(entries[1].name == "prettier")
     }
 
+    @Test("Decodes pnpm list root dependencies response")
+    func decodesPNPMListRootDependenciesResponse() throws {
+        let json = #"""
+        [
+            {
+                "path": "/Users/test/Library/pnpm/global/5",
+                "dependencies": {
+                    "typescript": {
+                        "from": "typescript",
+                        "version": "5.4.5",
+                        "path": "/Users/test/Library/pnpm/global/5/node_modules/typescript"
+                    },
+                    "prettier": {
+                        "from": "prettier",
+                        "version": "3.2.5",
+                        "path": "/Users/test/Library/pnpm/global/5/node_modules/prettier"
+                    }
+                }
+            }
+        ]
+        """#
+
+        let projects = try JSONOutputDecoder.decode(
+            [PNPMManager.PNPMListProject].self,
+            from: json,
+            context: "test pnpm list"
+        )
+        let entries = projects.flatMap { project in
+            project.dependencies?.map { name, dependency in
+                PNPMManager.PNPMListEntry(
+                    name: dependency.from ?? name,
+                    version: dependency.version,
+                    path: dependency.path
+                )
+            } ?? []
+        }
+
+        #expect(entries.count == 2)
+        #expect(entries.contains { $0.name == "typescript" && $0.version == "5.4.5" })
+        #expect(entries.contains { $0.name == "prettier" && $0.version == "3.2.5" })
+    }
+
     @Test("Decodes pnpm outdated -g --json object response")
     func decodesPNPMOutdatedResponse() throws {
         let json = #"""

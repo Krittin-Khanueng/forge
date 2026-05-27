@@ -54,9 +54,8 @@ actor ProcessRunner {
             try await withProcessTimeout(options.timeout, commandLabel: commandLabel, pid: pid) {
                 async let stdoutData = Self.drain(stdoutPipe.fileHandleForReading)
                 async let stderrData = Self.drain(stderrPipe.fileHandleForReading)
-                let (out, err) = await (stdoutData, stderrData)
-
-                process.waitUntilExit()
+                async let exitCode = Self.waitForExit(process)
+                let (out, err, status) = await (stdoutData, stderrData, exitCode)
 
                 if Task.isCancelled {
                     throw ProcessError.cancelled
@@ -65,22 +64,22 @@ actor ProcessRunner {
                 let stdout = String(data: out, encoding: .utf8) ?? ""
                 let stderr = String(data: err, encoding: .utf8) ?? ""
 
-                guard process.terminationStatus == 0 else {
+                guard status == 0 else {
                     if !silenceErrorLog {
-                        self.logger.error("Non-zero exit (\(process.terminationStatus)): \(commandLabel)\n\(stderr)")
+                        self.logger.error("Non-zero exit (\(status)): \(commandLabel)\n\(stderr)")
                     } else {
-                        self.logger.debug("Non-zero exit (\(process.terminationStatus)): \(commandLabel)")
+                        self.logger.debug("Non-zero exit (\(status)): \(commandLabel)")
                     }
                     throw ProcessError.nonZeroExit(
                         command: commandLabel,
-                        code: process.terminationStatus,
+                        code: status,
                         stderr: stderr
                     )
                 }
 
                 self.logger.debug("Completed (0): \(commandLabel)")
                 return Result(
-                    exitCode: process.terminationStatus,
+                    exitCode: status,
                     stdout: stdout,
                     stderr: stderr
                 )
@@ -171,19 +170,21 @@ actor ProcessRunner {
             }
 
             timeoutTask?.cancel()
+            process.waitUntilExit()
 
             let stderrData = readRemaining(stderrPipe.fileHandleForReading)
             let fullStderr = String(data: stderrData, encoding: .utf8) ?? ""
+            let status = process.terminationStatus
 
-            if process.terminationStatus == 0 {
-                continuation.yield(.exited(process.terminationStatus))
+            if status == 0 {
+                continuation.yield(.exited(status))
                 continuation.finish()
             } else {
-                logger.error("Non-zero exit (\(process.terminationStatus)): \(commandLabel)")
+                logger.error("Non-zero exit (\(status)): \(commandLabel)")
                 continuation.finish(
                     throwing: ProcessError.nonZeroExit(
                         command: commandLabel,
-                        code: process.terminationStatus,
+                        code: status,
                         stderr: fullStderr
                     )
                 )
@@ -205,6 +206,15 @@ actor ProcessRunner {
             DispatchQueue.global(qos: .userInitiated).async {
                 let data = handle.readDataToEndOfFile()
                 continuation.resume(returning: data)
+            }
+        }
+    }
+
+    private static func waitForExit(_ process: Process) async -> Int32 {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                process.waitUntilExit()
+                continuation.resume(returning: process.terminationStatus)
             }
         }
     }

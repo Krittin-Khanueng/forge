@@ -14,6 +14,19 @@ actor PNPMManager: PackageManagerProtocol {
         let path: String?
     }
 
+    struct PNPMListProject: Decodable, Sendable {
+        let name: String?
+        let version: String?
+        let path: String?
+        let dependencies: [String: PNPMDependencyEntry]?
+    }
+
+    struct PNPMDependencyEntry: Decodable, Sendable {
+        let from: String?
+        let version: String?
+        let path: String?
+    }
+
     struct PNPMOutdatedEntry: Decodable, Sendable {
         let current: String?
         let wanted: String?
@@ -38,7 +51,33 @@ actor PNPMManager: PackageManagerProtocol {
             return []
         }
 
-        let items = try JSONOutputDecoder.decode([PNPMListEntry].self, from: result.stdout)
+        let projects = try JSONOutputDecoder.decode(
+            [PNPMListProject].self,
+            from: result.stdout,
+            context: "pnpm list -g --depth=0 --json"
+        )
+        let items = projects.flatMap { project -> [PNPMListEntry] in
+            var entries: [PNPMListEntry] = []
+
+            if let name = project.name {
+                entries.append(PNPMListEntry(name: name, version: project.version, path: project.path))
+            }
+
+            if let dependencies = project.dependencies {
+                entries.append(contentsOf: dependencies.map { name, dependency in
+                    PNPMListEntry(
+                        name: dependency.from ?? name,
+                        version: dependency.version,
+                        path: dependency.path
+                    )
+                })
+            }
+
+            return entries
+        }
+
+        logger.info("pnpm list decoded: projects=\(projects.count), packages=\(items.count)")
+
         return items.map { entry in
             Package(
                 name: entry.name,
@@ -61,7 +100,11 @@ actor PNPMManager: PackageManagerProtocol {
             return []
         }
 
-        let entries = try JSONOutputDecoder.decode([String: PNPMOutdatedEntry].self, from: stdout)
+        let entries = try JSONOutputDecoder.decode(
+            [String: PNPMOutdatedEntry].self,
+            from: stdout,
+            context: "pnpm outdated -g --json"
+        )
         return entries.map { name, entry in
             Package(
                 name: name,

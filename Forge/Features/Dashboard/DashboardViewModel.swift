@@ -44,9 +44,14 @@ final class DashboardViewModel {
 
         for kind in registry.detectedKinds {
             guard let manager = registry.manager(kind) else { continue }
-            if let pkgs = try? await manager.installedPackages() {
+            do {
+                logger.info("Dashboard loading installed packages: \(kind.displayName)")
+                let pkgs = try await manager.installedPackages()
+                logger.info("Dashboard loaded installed packages: \(kind.displayName), count=\(pkgs.count)")
                 all.append(contentsOf: pkgs)
                 counts[kind] = pkgs.count
+            } catch {
+                logger.warning("Dashboard failed loading installed packages: \(kind.displayName), error=\(error.localizedDescription)")
             }
         }
 
@@ -54,7 +59,15 @@ final class DashboardViewModel {
 
         for kind in registry.detectedKinds {
             guard let manager = registry.manager(kind) else { continue }
-            guard let outdated = try? await manager.outdatedPackages() else { continue }
+            let outdated: [Package]
+            do {
+                logger.info("Dashboard loading outdated packages: \(kind.displayName)")
+                outdated = try await manager.outdatedPackages()
+                logger.info("Dashboard loaded outdated packages: \(kind.displayName), count=\(outdated.count)")
+            } catch {
+                logger.warning("Dashboard failed loading outdated packages: \(kind.displayName), error=\(error.localizedDescription)")
+                continue
+            }
             for outdatedPkg in outdated {
                 if let idx = all.firstIndex(where: { $0.id == outdatedPkg.id }) {
                     all[idx] = Package(

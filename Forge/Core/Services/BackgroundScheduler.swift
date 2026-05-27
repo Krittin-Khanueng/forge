@@ -28,7 +28,6 @@ final class BackgroundScheduler {
         let settings = repo.current()
         guard settings.autoRefreshEnabled else { return }
 
-        let intervalSeconds = settings.autoRefreshIntervalMinutes * 60
         logger.info("Starting background scheduler: interval=\(settings.autoRefreshIntervalMinutes)min")
 
         refreshTask = Task { @MainActor in
@@ -69,15 +68,28 @@ final class BackgroundScheduler {
         var all: [Package] = []
         for kind in registry.detectedKinds {
             guard let manager = registry.manager(kind) else { continue }
-            if let pkgs = try? await manager.installedPackages() {
+            do {
+                logger.info("Scheduler loading installed packages: \(kind.displayName)")
+                let pkgs = try await manager.installedPackages()
+                logger.info("Scheduler loaded installed packages: \(kind.displayName), count=\(pkgs.count)")
                 all.append(contentsOf: pkgs)
+            } catch {
+                logger.warning("Scheduler failed loading installed packages: \(kind.displayName), error=\(error.localizedDescription)")
             }
         }
 
         var newOutdated = 0
         for kind in registry.detectedKinds {
             guard let manager = registry.manager(kind) else { continue }
-            guard let outdated = try? await manager.outdatedPackages() else { continue }
+            let outdated: [Package]
+            do {
+                logger.info("Scheduler loading outdated packages: \(kind.displayName)")
+                outdated = try await manager.outdatedPackages()
+                logger.info("Scheduler loaded outdated packages: \(kind.displayName), count=\(outdated.count)")
+            } catch {
+                logger.warning("Scheduler failed loading outdated packages: \(kind.displayName), error=\(error.localizedDescription)")
+                continue
+            }
             newOutdated += outdated.count
             for outdatedPkg in outdated {
                 if let idx = all.firstIndex(where: { $0.id == outdatedPkg.id }) {
