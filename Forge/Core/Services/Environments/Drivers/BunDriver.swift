@@ -17,7 +17,6 @@ actor BunDriver: EnvironmentDriverProtocol {
         let bunURL = try await resolveBun()
         let result = try await runner.run(bunURL, arguments: ["--version"])
         let version = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-        let path = bunURL.deletingLastPathComponent().path
 
         return [RuntimeInfo(
             id: "bun:\(version)",
