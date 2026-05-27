@@ -2,7 +2,7 @@
 
 **Unified package & environment manager for macOS**
 
-Swift 6, macOS 15+, Xcode 16+, SwiftUI, SwiftData, swift-testing
+Swift 6.3+, macOS 26+ (Tahoe), Xcode 26+, SwiftUI, SwiftData, swift-testing (SPM)
 
 ## Quick Reference
 
@@ -20,7 +20,7 @@ Swift 6, macOS 15+, Xcode 16+, SwiftUI, SwiftData, swift-testing
 ## Key Files
 
 ```
-Package.swift           # Swift 6, strict concurrency, swift-testing dep
+Package.swift           # swift-tools 6.3, macOS 26 min, strict concurrency, swift-testing SPM
 Forge/App/
 ├── ForgeApp.swift      # @main entry, WindowGroup + NavigationSplitView
 ├── ContentView.swift   # SidebarItem enum, Cmd+K palette

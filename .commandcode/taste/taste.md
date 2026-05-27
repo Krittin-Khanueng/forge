@@ -1,6 +1,6 @@
 # swift
 - Use Swift 6 with strict concurrency checking enabled in Package.swift. Confidence: 0.90
-- Deploy to macOS 15.0 minimum and use Xcode 16+. Confidence: 0.90
+- Deploy to macOS 26.0 minimum (Tahoe) and use Xcode 26+. Confidence: 0.90
 
 # swiftui
 - Use @Observable + @State exclusively; never use @StateObject, @ObservedObject, or @EnvironmentObject (deprecated). Confidence: 0.90

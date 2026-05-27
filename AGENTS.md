@@ -3,6 +3,14 @@
 ## Project Overview
 See @README.md for project overview, features, requirements, and build commands.
 
+Personal macOS app — minimum deployment **macOS 26 (Tahoe)** only; no need to support older releases.
+
+### Platform & Toolchain
+- **Deployment:** macOS 26+ (`Package.swift` → `.macOS(.v26)`)
+- **Build:** Xcode 26+, Swift 6.3+ (`swift-tools-version: 6.3`), Strict Concurrency enabled
+- **UI:** SwiftUI + SwiftData (SDK version follows Xcode; no separate SwiftUI package)
+- **Tests:** [swift-testing](https://github.com/swiftlang/swift-testing) via SPM (`from: "0.12.0"`, resolves ~0.99.0). Do not remove the SPM dep for `swift test` — toolchain-only `import Testing` fails without `_TestingInternals`. Pinning 6.3.x in SPM currently breaks macro builds; revisit when upstream fixes land.
+
 ## Code Style Guidelines
 - Use descriptive variable names
 - Follow existing patterns in the codebase

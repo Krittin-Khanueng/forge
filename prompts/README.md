@@ -33,7 +33,7 @@
 
 ## หลักการสำคัญที่ใช้ทุก task
 
-- **macOS 15**, **Xcode 16**, **Swift 6 strict concurrency**
+- **macOS 26 (Tahoe)**, **Xcode 26**, **Swift 6.3** strict concurrency
 - **App Sandbox: DISABLED** (จำเป็นเพื่อรัน brew/npm/docker)
 - **Hardened Runtime: ENABLED**
 - **PATH discovery**: ลอง `/opt/homebrew/bin` แล้ว `/usr/local/bin` ก่อน fallback `/bin/zsh -lc 'command -v <bin>'`

@@ -7,7 +7,7 @@ Create the Xcode project + app shell + sidebar. No real package manager logic ye
 - Xcode project name: `Forge`
 - Bundle ID: `com.forge.app`
 - macOS deployment target: 15.0
-- Swift version: 6.0
+- Swift version: 6.3 (tools); min macOS 26
 - Enable strict concurrency checking
 - Create `Forge.entitlements`:
   - `com.apple.security.app-sandbox` = NO

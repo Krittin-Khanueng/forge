@@ -7,7 +7,7 @@ NON-NEGOTIABLE CONSTRAINTS (apply to all code you write):
 - Language: Swift 6 with strict concurrency checking enabled
   * Enable in Package.swift: .enableUpcomingFeature("StrictConcurrency") or set swiftLanguageVersion: .v6
   * Mark ALL @Sendable closures explicitly — non-@Sendable closures silently inherit wrong actor isolation
-- Min deployment: macOS 15.0
+- Min deployment: macOS 26.0 (Tahoe)
 - Xcode: 16+
 - UI: SwiftUI only (NavigationSplitView, Table, @Observable, async tasks)
 
