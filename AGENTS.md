@@ -27,8 +27,8 @@ Personal macOS app — minimum deployment **macOS 26 (Tahoe)** only; no need to 
 ### Service Initialization
 - No DI container; manual construction
 - `AppEnvironment` owns `SearchService`, provides via SwiftUI `.environment()`
-- ViewModels own their own dependencies (e.g., `DashboardViewModel` creates `PackageCache(container:)`)
-- Views create ViewModels via `@State private var viewModel = XYZViewModel()`
+- Shared ViewModels live on `AppEnvironment` (`dashboardViewModel`, `packagesViewModel`, `updatesViewModel`)
+- `PackageRefreshService.shared` coordinates package scans across features
 
 ### Navigation
 - `NavigationSplitView` with `SidebarItem` enum

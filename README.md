@@ -9,11 +9,9 @@ Unified package & environment manager for macOS — จัดการทุก 
 ## Features
 
 - **Package Managers** — Homebrew, npm, pnpm, yarn, bun, uv (Python), cargo (Rust)
-- **Docker** — containers, images, daemon health monitoring
 - **Environments** — Python venvs, Node versions, Rust toolchains
 - **Updates** — ตรวจจับ outdated packages + bulk update
 - **Search** — unified search ทุก package manager
-- **AI Assistant** — AI-powered help & tool calling
 
 ## Requirements
 
@@ -39,13 +37,13 @@ swift test
 Forge/
 ├── App/           # Entry point, navigation
 ├── Core/
-│   ├── Models/         # Docker, Package, etc.
+│   ├── Models/         # Package, ActivityEntry, etc.
 │   ├── PackageManagers/ # Brew, npm, pnpm, yarn, bun, uv, cargo
 │   ├── Process/        # ProcessRunner, BinaryResolver, ShellEscape
-│   ├── Services/       # AI, Docker, Environments, Search, Notifications
+│   ├── Services/       # Environments, Search, Notifications, BackgroundScheduler
 │   ├── Storage/        # SwiftData models & repositories
 │   └── Utilities/      # Logger
-├── Features/       # UI per feature (Dashboard, Packages, Docker, AI, etc.)
+├── Features/       # UI per feature (Dashboard, Packages, Updates, Environments, Search, Settings)
 ├── Shared/         # Reusable components, layout, design system
 └── Resources/      # Assets, Info.plist, entitlements
 ```

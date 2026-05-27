@@ -34,10 +34,8 @@ Forge/
 │   ├── Packages/
 │   ├── Updates/
 │   ├── Environments/
-│   ├── Docker/
 │   ├── Search/
-│   ├── Settings/
-│   └── AI/
+│   └── Settings/
 ├── Shared/
 │   ├── Components/
 │   ├── DesignSystem/
@@ -71,17 +69,15 @@ Forge/
 - `Features/Packages/PackagesView.swift` — shows "Packages" centered
 - `Features/Updates/UpdatesView.swift`
 - `Features/Environments/EnvironmentsView.swift`
-- `Features/Docker/DockerView.swift`
 - `Features/Search/SearchView.swift`
 - `Features/Settings/SettingsView.swift`
-- `Features/AI/AIView.swift`
 
 ### `Shared/Layouts/SidebarView.swift`
 - Enum `SidebarItem: String, CaseIterable, Identifiable, Hashable` with cases:
-  `dashboard, packages, updates, environments, docker, search, settings, ai`
+  `dashboard, packages, updates, environments, search, settings`
 - Each case has `title: String` and `systemImage: String`
 - `List(selection:)` binding to `SidebarItem?`
-- Section grouping: "Overview" (dashboard), "Manage" (packages, updates, environments, docker), "Tools" (search, ai), "App" (settings)
+- Section grouping: "Overview" (dashboard), "Manage" (packages, updates, environments), "Tools" (search), "App" (settings)
 
 ## SwiftUI notes for this task
 - Use `ContentUnavailableView("Select an item", systemImage: "sidebar.left")` for empty detail state
@@ -90,7 +86,7 @@ Forge/
 
 ## Verification
 - App launches
-- Sidebar shows 8 items grouped in 4 sections
+- Sidebar shows 6 items grouped in 4 sections
 - Clicking each item swaps the detail pane to the matching placeholder view
 - Window resizes correctly
 

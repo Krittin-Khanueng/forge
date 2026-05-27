@@ -9,7 +9,7 @@ Swift 6.3+, macOS 26+ (Tahoe), Xcode 26+, SwiftUI, SwiftData, swift-testing (SPM
 | Concept | Pattern |
 |---|---|
 | UI Observation | `@Observable @MainActor final class` |
-| I/O Services | `actor` (ProcessRunner, DockerClient, all managers) |
+| I/O Services | `actor` (ProcessRunner, BinaryResolver, all package managers) |
 | DI | Manual construction, no container |
 | Navigation | `NavigationSplitView` + `SidebarItem` enum |
 | Tests | `swift-testing` only (@Test, @Suite, #expect, #require) |
@@ -36,12 +36,12 @@ Forge/Core/
 │   ├── Environments/   # EnvironmentService, drivers (Fnm, Volta, N, Rustup, Uv, Bun, System)
 │   ├── Notifications/  # SystemNotifier
 │   ├── SearchService.swift
+│   ├── PackageRefreshService.swift
 │   └── BackgroundScheduler.swift
 ├── Storage/
 │   ├── Models/         # CachedPackage, ActivityLogEntry, AppSettings (@Model)
 │   ├── Repositories/   # PackageCache, ActivityRepository, SettingsRepository
-│   ├── StorageStack.swift  # Singleton ModelContainer
-│   └── SecureStorage.swift # Keychain wrapper
+│   └── StorageStack.swift  # Singleton ModelContainer
 └── Utilities/          # Logger+Forge
 
 Forge/Features/         # UI per feature: Dashboard, Packages, Search, Updates, Environments, Settings

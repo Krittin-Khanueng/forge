@@ -54,7 +54,6 @@ Native macOS `Form` style with tabs:
 - General
 - Package Managers
 - Updates
-- AI
 - About
 
 ### `Features/Settings/Sections/GeneralSettingsView.swift`
@@ -72,13 +71,6 @@ Native macOS `Form` style with tabs:
 - Interval slider (5, 10, 15, 30, 60, 120 min)
 - Notify on new outdated: toggle
 - Last refresh: timestamp + "Refresh Now" button
-
-### `Features/Settings/Sections/AISettingsView.swift`
-- Provider picker: Mock (default) / Anthropic / OpenAI
-- Model picker for Anthropic: `claude-opus-4-7`, `claude-sonnet-4-6` (recommended), `claude-haiku-4-5`
-- API key field with `SecureField` (masks input) → stores via `SecureStorage` in Keychain
-- "Test connection" button (calls `currentService.send` with a tiny "say hi" prompt)
-- Note: Anthropic has no official Swift SDK — future wiring uses `SwiftAnthropic` package
 
 ### `Features/Settings/Sections/AboutView.swift`
 - Forge version (from `CFBundleShortVersionString`)
@@ -154,4 +146,3 @@ Compact popover:
 - No multi-window support
 - No Spotlight integration
 - No URL scheme handling (could be future for `forge://install/<pkg>`)
-- No actual Anthropic/OpenAI HTTP calls (still mock from task 3.3)
