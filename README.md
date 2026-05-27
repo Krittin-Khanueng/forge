@@ -2,7 +2,7 @@
 
 Unified package & environment manager for macOS — จัดการทุก package manager ในที่เดียว
 
-**macOS 15+ · Swift 6 · SwiftUI**
+**macOS 26+ · Swift 6 · SwiftUI**
 
 ---
 
@@ -17,9 +17,9 @@ Unified package & environment manager for macOS — จัดการทุก 
 
 ## Requirements
 
-- macOS 15.0+
-- Xcode 16+
-- Swift 6 (Strict Concurrency)
+- macOS 26.0+ (Tahoe)
+- Xcode 26+
+- Swift 6.3+ (Strict Concurrency)
 
 ## Build
 

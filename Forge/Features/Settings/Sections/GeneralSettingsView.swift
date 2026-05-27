@@ -51,17 +51,14 @@ struct GeneralSettingsView: View {
                 ))
             }
 
-            if #available(macOS 15.0, *) {
-                Section("Login") {
-                    LoginItemToggle()
-                }
+            Section("Login") {
+                LoginItemToggle()
             }
         }
         .formStyle(.grouped)
     }
 }
 
-@available(macOS 15.0, *)
 private struct LoginItemToggle: View {
     @State private var isRegistered: Bool = SMAppService.mainApp.status == .enabled
 

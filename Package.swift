@@ -1,10 +1,10 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.3
 import PackageDescription
 
 let package = Package(
     name: "Forge",
     platforms: [
-        .macOS(.v15)
+        .macOS(.v26)
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-testing.git", from: "0.12.0"),
