@@ -33,11 +33,12 @@ actor NPMManager: PackageManagerProtocol {
     }
 
     func outdatedPackages() async throws -> [Package] {
-        _ = try await requireNPM()
+        let npmURL = try await requireNPM()
+        let command = ShellEscape.command(npmURL.path, ["outdated", "-g", "--json"]) + " || true"
 
         let result = try await runner.run(
             bashURL,
-            arguments: ["-c", "npm outdated -g --json || true"]
+            arguments: ["-c", command]
         )
 
         let stdout = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)

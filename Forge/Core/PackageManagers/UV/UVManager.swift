@@ -27,7 +27,7 @@ actor UVManager: PackageManagerProtocol {
             Package(
                 name: entry.name,
                 installedVersion: entry.version,
-                latestVersion: nil,
+                latestVersion: entry.version,
                 manager: .uv,
                 installPath: nil,
                 description: nil,
@@ -37,14 +37,27 @@ actor UVManager: PackageManagerProtocol {
     }
 
     func outdatedPackages() async throws -> [Package] {
-        // TODO(forge): phase 3 — query PyPI for outdated info
-        return []
+        let uvURL = try await requireUV()
+        let result = try await runner.run(uvURL, arguments: ["tool", "list", "--show-python", "--outdated"])
+
+        let entries = UVParser.parseToolList(result.stdout)
+        return entries.map { entry in
+            Package(
+                name: entry.name,
+                installedVersion: entry.version,
+                latestVersion: entry.latestVersion,
+                manager: .uv,
+                installPath: nil,
+                description: nil,
+                homepage: nil
+            )
+        }
     }
 
     nonisolated func featureStatus(_ feature: ManagerFeature) -> FeatureStatus {
         switch feature {
         case .outdated:
-            return .missing(reason: "uv tool has no outdated command — PyPI query planned for phase 3")
+            return .available
         case .search:
             return .missing(reason: "uv pip search was deprecated/removed by PyPI")
         }

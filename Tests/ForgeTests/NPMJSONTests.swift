@@ -38,7 +38,7 @@ struct NPMJSONTests {
         #expect(pkg.name == "typescript")
         #expect(pkg.id == "npm:typescript")
         #expect(pkg.installedVersion == "5.4.5")
-        #expect(pkg.latestVersion == nil)
+        #expect(pkg.latestVersion == "5.4.5")
         #expect(pkg.manager == .npm)
     }
 

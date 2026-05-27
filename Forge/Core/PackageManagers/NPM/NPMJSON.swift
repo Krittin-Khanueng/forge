@@ -13,7 +13,7 @@ extension NPMListEntry {
         Package(
             name: name,
             installedVersion: version,
-            latestVersion: nil,
+            latestVersion: version,
             manager: .npm,
             installPath: nil,
             description: nil,

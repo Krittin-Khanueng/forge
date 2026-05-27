@@ -20,11 +20,13 @@ struct UVParserTests {
 
         #expect(entries[0].name == "ruff")
         #expect(entries[0].version == "0.9.1")
+        #expect(entries[0].latestVersion == nil)
         #expect(entries[0].binaries == ["ruff"])
         #expect(entries[0].pythonVersion == nil)
 
         #expect(entries[1].name == "black")
         #expect(entries[1].version == "24.4.2")
+        #expect(entries[1].latestVersion == nil)
         #expect(entries[1].binaries == ["black", "blackd"])
         #expect(entries[1].pythonVersion == nil)
     }
@@ -41,7 +43,25 @@ struct UVParserTests {
 
         #expect(entries[0].name == "ruff")
         #expect(entries[0].version == "0.9.1")
+        #expect(entries[0].latestVersion == nil)
         #expect(entries[0].pythonVersion == "python3.13")
+    }
+
+    @Test("Parses uv tool list outdated latest version")
+    func parsesOutdatedLatestVersion() throws {
+        let output = #"""
+        desloppify v0.9.15 [CPython 3.14.3] [latest: 1.0]
+        - desloppify
+        """#
+
+        let entries = UVParser.parseToolList(output)
+        #expect(entries.count == 1)
+
+        #expect(entries[0].name == "desloppify")
+        #expect(entries[0].version == "0.9.15")
+        #expect(entries[0].latestVersion == "1.0")
+        #expect(entries[0].pythonVersion == "CPython 3.14.3")
+        #expect(entries[0].binaries == ["desloppify"])
     }
 
     @Test("Parses uv tool list with poetry")
