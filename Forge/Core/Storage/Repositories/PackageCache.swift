@@ -71,4 +71,24 @@ final class PackageCache {
             try context.save()
         }
     }
+
+    func removeStale(olderThan interval: TimeInterval = 7 * 24 * 3600) throws {
+        let cutoff = Date(timeIntervalSinceNow: -interval)
+        let descriptor = FetchDescriptor<CachedPackage>(
+            predicate: #Predicate { $0.lastSeen < cutoff }
+        )
+        let stale = try context.fetch(descriptor)
+        guard !stale.isEmpty else { return }
+        for item in stale { context.delete(item) }
+        try context.save()
+    }
+
+    func removePackages(forRemovedManagers activeKinds: Set<String>) throws {
+        let descriptor = FetchDescriptor<CachedPackage>()
+        let all = try context.fetch(descriptor)
+        let toRemove = all.filter { !activeKinds.contains($0.managerRaw) }
+        guard !toRemove.isEmpty else { return }
+        for item in toRemove { context.delete(item) }
+        try context.save()
+    }
 }

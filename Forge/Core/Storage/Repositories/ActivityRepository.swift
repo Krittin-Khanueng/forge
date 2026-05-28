@@ -4,6 +4,8 @@ import SwiftData
 @MainActor
 final class ActivityRepository {
     private let context: ModelContext
+    private var pendingSave: Task<Void, Never>?
+    private let saveDelay: Duration = .milliseconds(500)
 
     init(container: ModelContainer) {
         context = container.mainContext
@@ -17,7 +19,7 @@ final class ActivityRepository {
             manager: manager?.rawValue
         )
         context.insert(entry)
-        try? context.save()
+        scheduleSave()
     }
 
     func recent(limit: Int) -> [ActivityLogEntry] {
@@ -26,5 +28,20 @@ final class ActivityRepository {
         )
         descriptor.fetchLimit = limit
         return (try? context.fetch(descriptor)) ?? []
+    }
+
+    func flushPendingSave() {
+        pendingSave?.cancel()
+        pendingSave = nil
+        try? context.save()
+    }
+
+    private func scheduleSave() {
+        pendingSave?.cancel()
+        pendingSave = Task { @MainActor in
+            try? await Task.sleep(for: saveDelay)
+            guard !Task.isCancelled else { return }
+            try? context.save()
+        }
     }
 }

@@ -15,9 +15,8 @@ struct DashboardView: View {
 
     var body: some View {
         ScrollView {
-            if viewModel.isLoading {
-                LoadingState("Loading dashboard...")
-                    .padding(.top, 80)
+            if viewModel.isLoading && viewModel.totalPackages == 0 {
+                SkeletonDashboard()
             } else {
                 VStack(alignment: .leading, spacing: ForgeTheme.Spacing.xl) {
                     dashboardHeader
@@ -26,6 +25,7 @@ struct DashboardView: View {
                     activitySection
                 }
                 .padding(ForgeTheme.Spacing.xxl)
+                .animation(.easeInOut(duration: 0.25), value: viewModel.isRefreshing)
             }
         }
         .scrollContentBackground(.hidden)
@@ -104,9 +104,12 @@ struct DashboardView: View {
                     .trim(from: 0, to: packageHealthRatio)
                     .stroke(healthColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.6), value: packageHealthRatio)
                 Text("\(Int((packageHealthRatio * 100).rounded()))%")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(.easeInOut(duration: 0.4), value: packageHealthRatio)
             }
             .frame(width: 68, height: 68)
 
@@ -166,6 +169,7 @@ struct DashboardView: View {
                     .font(ForgeTheme.Font.metric)
                     .foregroundStyle(.primary)
                     .contentTransition(.numericText())
+                    .animation(.easeInOut(duration: 0.3), value: value)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                 Text(title)
@@ -183,6 +187,8 @@ struct DashboardView: View {
             RoundedRectangle(cornerRadius: ForgeTheme.Radius.l)
                 .stroke(ForgeTheme.Palette.hairline, lineWidth: 1)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value), \(footnote)")
     }
 
     private var managerSection: some View {
@@ -225,6 +231,7 @@ struct DashboardView: View {
                     .font(.callout.weight(.semibold))
                 ProgressView(value: managerShare(count), total: 1)
                     .tint(tint)
+                    .animation(.easeInOut(duration: 0.4), value: count)
             }
 
             Text("\(count)")
@@ -233,6 +240,8 @@ struct DashboardView: View {
                 .frame(width: 44, alignment: .trailing)
         }
         .padding(.vertical, ForgeTheme.Spacing.m)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(kind.displayName): \(count) packages")
     }
 
     private var activitySection: some View {

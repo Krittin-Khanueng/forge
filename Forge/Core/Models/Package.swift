@@ -53,10 +53,10 @@ struct Package: Identifiable, Hashable, Sendable, Codable {
 
     var status: PackageStatus {
         if installedVersion == nil {
-            return .unknown
+            return latestVersion != nil ? .notInstalled : .unknown
         }
         if latestVersion == nil {
-            return .unknown
+            return .upToDate
         }
         return isOutdated ? .outdated : .upToDate
     }

@@ -42,7 +42,7 @@ struct UpdatesSettingsView: View {
                     Text("Last Refresh")
                     Spacer()
                     if let last = BackgroundScheduler.shared.lastRefresh {
-                        Text(last, style: .relative) + Text(" ago")
+                        Text("\(last, style: .relative) ago")
                     } else {
                         Text("Never")
                     }

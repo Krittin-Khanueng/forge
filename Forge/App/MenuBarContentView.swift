@@ -3,15 +3,20 @@ import SwiftUI
 struct MenuBarContentView: View {
     @State private var outdatedCount: Int = BackgroundScheduler.shared.outdatedCount
     @State private var lastRefresh: Date? = BackgroundScheduler.shared.lastRefresh
+    @State private var isRefreshing = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
+            HStack(spacing: ForgeTheme.Spacing.s) {
                 Image(systemName: "hammer.fill")
                     .foregroundStyle(ForgeTheme.Palette.forgeOrange)
                 Text("Forge")
                     .fontWeight(.semibold)
                 Spacer()
+                if isRefreshing {
+                    ProgressView()
+                        .controlSize(.mini)
+                }
             }
             .padding(.bottom, 4)
 
@@ -20,12 +25,15 @@ struct MenuBarContentView: View {
                     NSApp.activate(ignoringOtherApps: true)
                     openMainWindow()
                 } label: {
-                    HStack {
+                    HStack(spacing: ForgeTheme.Spacing.s) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(ForgeTheme.Palette.forgeOrange)
                         Text("\(outdatedCount) outdated packages")
+                            .fontWeight(.medium)
+                        Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
                     }
                 }
                 .buttonStyle(.plain)
@@ -34,23 +42,33 @@ struct MenuBarContentView: View {
                     NSApp.activate(ignoringOtherApps: true)
                     openMainWindow()
                 } label: {
-                    Label("Open Updates", systemImage: "arrow.triangle.2.circlepath")
+                    Label("View Updates", systemImage: "arrow.triangle.2.circlepath")
                 }
                 .buttonStyle(.plain)
             } else {
-                Text("All packages up to date")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: ForgeTheme.Spacing.s) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(ForgeTheme.Palette.forgeGreen)
+                        .font(.caption)
+                    Text("All packages up to date")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Divider()
 
             Button {
-                Task { await BackgroundScheduler.shared.refreshNow() }
+                isRefreshing = true
+                Task {
+                    await BackgroundScheduler.shared.refreshNow()
+                    isRefreshing = false
+                }
             } label: {
-                Label("Refresh Now", systemImage: "arrow.clockwise")
+                Label(isRefreshing ? "Refreshing..." : "Refresh Now", systemImage: "arrow.clockwise")
             }
             .buttonStyle(.plain)
+            .disabled(isRefreshing)
 
             if let last = lastRefresh {
                 Text("Last refresh: \(last, style: .relative) ago")
@@ -71,15 +89,17 @@ struct MenuBarContentView: View {
             Button {
                 NSApplication.shared.terminate(nil)
             } label: {
-                Label("Quit", systemImage: "xmark.square")
+                Label("Quit Forge", systemImage: "xmark.square")
             }
             .buttonStyle(.plain)
         }
         .padding()
         .frame(width: 240)
         .onReceive(NotificationCenter.default.publisher(for: .forgeRefreshCompleted)) { _ in
-            outdatedCount = PackageRefreshService.shared.outdatedCount
-            lastRefresh = BackgroundScheduler.shared.lastRefresh
+            withAnimation(.easeInOut(duration: 0.2)) {
+                outdatedCount = PackageRefreshService.shared.outdatedCount
+                lastRefresh = BackgroundScheduler.shared.lastRefresh
+            }
         }
     }
 

@@ -9,13 +9,20 @@ struct PackagesView: View {
     var body: some View {
         Group {
             if viewModel.isLoading && viewModel.packages.isEmpty {
-                loadingView
+                SkeletonTable()
             } else if let _ = viewModel.error, viewModel.packages.isEmpty {
                 errorView
             } else if viewModel.filteredPackages.isEmpty {
                 emptyView
             } else {
                 packagesTable
+                    .overlay(alignment: .top) {
+                        if viewModel.isLoading && !viewModel.packages.isEmpty {
+                            ProgressView()
+                                .controlSize(.small)
+                                .padding(.top, ForgeTheme.Spacing.s)
+                        }
+                    }
             }
         }
         .inspector(isPresented: $showInspector) {
@@ -86,14 +93,20 @@ struct PackagesView: View {
             EmptyState(
                 icon: "shippingbox",
                 title: "No Packages",
-                subtitle: "No packages found. Install some via Homebrew."
-            )
+                subtitle: "No packages were found. Install a package manager like Homebrew, npm, or Cargo to get started.",
+                actionLabel: "Refresh"
+            ) {
+                Task { await viewModel.refresh() }
+            }
         } else {
             EmptyState(
                 icon: "magnifyingglass",
                 title: "No Results",
-                subtitle: "No packages match \"\(viewModel.searchText)\""
-            )
+                subtitle: "No packages match \"\(viewModel.searchText)\". Try a different search term.",
+                actionLabel: "Clear Search"
+            ) {
+                viewModel.setSearchText("")
+            }
         }
     }
 

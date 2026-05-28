@@ -146,6 +146,9 @@ final class PackageRefreshService {
 
         packages = PackageMergeHelpers.sortedByName(all)
         try? cache.upsert(packages)
+        let activeKinds = Set(kinds.map(\.rawValue))
+        try? cache.removePackages(forRemovedManagers: activeKinds)
+        try? cache.removeStale()
         lastRefreshedAt = Date()
 
         activityRepo.record(

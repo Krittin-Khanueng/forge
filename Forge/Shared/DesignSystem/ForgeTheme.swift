@@ -14,6 +14,7 @@ enum ForgeTheme {
         static let s: CGFloat = 6
         static let m: CGFloat = 8
         static let l: CGFloat = 14
+        static let xl: CGFloat = 20
     }
 
     enum Font {
@@ -22,6 +23,7 @@ enum ForgeTheme {
         static let metric = SwiftUI.Font.system(size: 30, weight: .bold, design: .rounded)
         static let compactTitle = SwiftUI.Font.system(.title3, design: .rounded).weight(.semibold)
         static let section = SwiftUI.Font.system(.subheadline, design: .rounded).weight(.semibold)
+        static let footnote = SwiftUI.Font.system(.caption, design: .rounded)
     }
 
     enum Palette {
@@ -35,12 +37,20 @@ enum ForgeTheme {
         static let forgeGreen = Color(red: 0.16, green: 0.58, blue: 0.28)
         static let forgeGold = Color(red: 0.82, green: 0.55, blue: 0.12)
         static let forgeBlue = Color(red: 0.18, green: 0.42, blue: 0.78)
+        static let forgeRed = Color(red: 0.78, green: 0.13, blue: 0.18)
+    }
+
+    enum Animation {
+        static let quick = SwiftUI.Animation.easeInOut(duration: 0.2)
+        static let standard = SwiftUI.Animation.easeInOut(duration: 0.3)
+        static let slow = SwiftUI.Animation.easeInOut(duration: 0.5)
+        static let spring = SwiftUI.Animation.spring(response: 0.35, dampingFraction: 0.8)
     }
 
     static func managerColor(_ kind: PackageManagerKind) -> Color {
         switch kind {
         case .brew:  return Palette.forgeOrange
-        case .npm:   return Color(red: 0.78, green: 0.13, blue: 0.18)
+        case .npm:   return Palette.forgeRed
         case .pnpm:  return Palette.forgeGold
         case .yarn:  return Palette.forgeBlue
         case .bun:   return Color(red: 0.62, green: 0.36, blue: 0.19)

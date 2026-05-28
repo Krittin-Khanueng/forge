@@ -2,6 +2,8 @@ import SwiftUI
 
 struct UpdatesView: View {
     @Bindable var viewModel: UpdatesViewModel
+    @State private var isConfirmingUpdateAll = false
+    @State private var confirmingManager: PackageManagerKind?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,6 +35,38 @@ struct UpdatesView: View {
         .task {
             await viewModel.loadIfNeeded()
         }
+        .confirmationDialog(
+            "Update All Outdated Packages?",
+            isPresented: $isConfirmingUpdateAll,
+            titleVisibility: .visible
+        ) {
+            Button("Update All \(viewModel.totalOutdated) Packages") {
+                Task { await viewModel.updateAllOutdated() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will update \(viewModel.totalOutdated) outdated packages across all detected package managers.")
+        }
+        .confirmationDialog(
+            "Update All \(confirmingManager?.displayName ?? "") Packages?",
+            isPresented: Binding(
+                get: { confirmingManager != nil },
+                set: { if !$0 { confirmingManager = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let kind = confirmingManager {
+                let count = viewModel.outdatedByManager[kind]?.count ?? 0
+                Button("Update All \(count) Packages") {
+                    Task { await viewModel.updateAll(for: kind) }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if let kind = confirmingManager {
+                Text("This will update all outdated \(kind.displayName) packages.")
+            }
+        }
     }
 
     private var header: some View {
@@ -63,7 +97,7 @@ struct UpdatesView: View {
             .disabled(viewModel.isLoading || viewModel.isRefreshing || viewModel.isUpdating)
 
             Button {
-                Task { await viewModel.updateAllOutdated() }
+                isConfirmingUpdateAll = true
             } label: {
                 Label("Update All", systemImage: "arrow.triangle.2.circlepath")
             }
@@ -98,7 +132,8 @@ struct UpdatesView: View {
                     managerSection(kind: section.kind, packages: section.packages)
                 }
             }
-            .padding(ForgeTheme.Spacing.xl)
+            .padding(ForgeTheme.Spacing.xxl)
+            .animation(.easeInOut(duration: 0.25), value: viewModel.totalOutdated)
         }
     }
 
@@ -118,7 +153,7 @@ struct UpdatesView: View {
                 Spacer()
 
                 Button {
-                    Task { await viewModel.updateAll(for: kind) }
+                    confirmingManager = kind
                 } label: {
                     if viewModel.updatingManagers.contains(kind) {
                         ProgressView()

@@ -6,6 +6,7 @@ struct CommandPaletteView: View {
     let onDismiss: () -> Void
 
     @State private var selectedIndex: Int = 0
+    @State private var pendingInstall: SearchHit?
 
     private var allHits: [SearchHit] {
         let installed = env.searchService.localResults
@@ -24,6 +25,7 @@ struct CommandPaletteView: View {
                     set: { newValue in
                         Task { await env.searchService.updateQuery(newValue) }
                         selectedIndex = 0
+                        pendingInstall = nil
                     }
                 ))
                 .textFieldStyle(.plain)
@@ -71,18 +73,27 @@ struct CommandPaletteView: View {
                             .listRowSeparator(.hidden)
                     } else {
                         ForEach(Array(allHits.enumerated()), id: \.element.id) { index, hit in
-                            SearchResultRow(hit: hit, isSelected: selectedIndex == index)
-                                .tag(index)
-                                .id(index)
-                                .onTapGesture {
-                                    handleSelection(hit)
+                            VStack(spacing: 0) {
+                                SearchResultRow(hit: hit, isSelected: selectedIndex == index)
+                                    .tag(index)
+                                    .id(index)
+                                    .onTapGesture {
+                                        handleTap(hit)
+                                    }
+
+                                if let pending = pendingInstall, pending.id == hit.id {
+                                    installConfirmationRow(pending)
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
                                 }
+                            }
                         }
                     }
                 }
                 .listStyle(.plain)
+                .animation(.easeInOut(duration: 0.15), value: pendingInstall?.id)
                 .onChange(of: selectedIndex) { _, newValue in
                     proxy.scrollTo(newValue, anchor: .center)
+                    pendingInstall = nil
                 }
                 .onKeyPress(.downArrow) {
                     let max = max(0, allHits.count - 1)
@@ -98,12 +109,16 @@ struct CommandPaletteView: View {
                     return .handled
                 }
                 .onKeyPress(.escape) {
-                    onDismiss()
+                    if pendingInstall != nil {
+                        pendingInstall = nil
+                    } else {
+                        onDismiss()
+                    }
                     return .handled
                 }
             }
         }
-        .frame(width: 560, height: 400)
+        .frame(width: 560, height: 420)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: ForgeTheme.Radius.l))
         .overlay(
             RoundedRectangle(cornerRadius: ForgeTheme.Radius.l)
@@ -116,14 +131,55 @@ struct CommandPaletteView: View {
         }
     }
 
-    private func handleSelection(_ hit: SearchHit) {
-        if !hit.isInstalled {
+    private func installConfirmationRow(_ hit: SearchHit) -> some View {
+        HStack(spacing: ForgeTheme.Spacing.m) {
+            Image(systemName: "arrow.down.circle.fill")
+                .foregroundStyle(ForgeTheme.Palette.forgeBlue)
+            Text("Install **\(hit.name)** via \(hit.manager.displayName)?")
+                .font(.callout)
+            Spacer()
+            Button("Cancel") {
+                pendingInstall = nil
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            Button("Install") {
+                Task { await env.searchService.install(hit.name, manager: hit.manager) }
+                pendingInstall = nil
+                onDismiss()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, ForgeTheme.Spacing.l)
+        .padding(.vertical, ForgeTheme.Spacing.s)
+        .background(ForgeTheme.Palette.forgeBlue.opacity(0.06))
+    }
+
+    private func handleTap(_ hit: SearchHit) {
+        if hit.isInstalled {
+            NSApp.activate(ignoringOtherApps: true)
+            onDismiss()
+        } else if pendingInstall?.id == hit.id {
             Task { await env.searchService.install(hit.name, manager: hit.manager) }
+            pendingInstall = nil
+            onDismiss()
+        } else {
+            pendingInstall = hit
         }
     }
 
     private func confirmSelection() {
         guard selectedIndex < allHits.count else { return }
-        handleSelection(allHits[selectedIndex])
+        let hit = allHits[selectedIndex]
+        if hit.isInstalled {
+            onDismiss()
+        } else if pendingInstall?.id == hit.id {
+            Task { await env.searchService.install(hit.name, manager: hit.manager) }
+            pendingInstall = nil
+            onDismiss()
+        } else {
+            pendingInstall = hit
+        }
     }
 }

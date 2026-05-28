@@ -15,21 +15,24 @@ struct StatusBadge: View {
         .padding(.vertical, 4)
         .background(backgroundColor, in: Capsule())
         .foregroundStyle(foregroundColor)
+        .accessibilityLabel(status.label)
     }
 
     private var backgroundColor: Color {
         switch status {
-        case .upToDate: return ForgeTheme.Palette.forgeGreen.opacity(0.14)
-        case .outdated: return ForgeTheme.Palette.forgeOrange.opacity(0.16)
-        case .unknown:  return .secondary.opacity(0.15)
+        case .upToDate:     return ForgeTheme.Palette.forgeGreen.opacity(0.14)
+        case .outdated:     return ForgeTheme.Palette.forgeOrange.opacity(0.16)
+        case .notInstalled:  return ForgeTheme.Palette.forgeBlue.opacity(0.12)
+        case .unknown:      return .secondary.opacity(0.15)
         }
     }
 
     private var foregroundColor: Color {
         switch status {
-        case .upToDate: return ForgeTheme.Palette.forgeGreen
-        case .outdated: return ForgeTheme.Palette.forgeOrange
-        case .unknown:  return .secondary
+        case .upToDate:     return ForgeTheme.Palette.forgeGreen
+        case .outdated:     return ForgeTheme.Palette.forgeOrange
+        case .notInstalled:  return ForgeTheme.Palette.forgeBlue
+        case .unknown:      return .secondary
         }
     }
 }
