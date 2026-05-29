@@ -9,6 +9,9 @@ final class CachedPackage {
     var latestVersion: String?
     var managerRaw: String
     var lastSeen: Date
+    var installPath: String?
+    var desc: String?
+    var homepageURL: String?
 
     var manager: PackageManagerKind {
         PackageManagerKind(rawValue: managerRaw) ?? .brew
@@ -19,6 +22,9 @@ final class CachedPackage {
         installedVersion: String?,
         latestVersion: String?,
         manager: PackageManagerKind,
+        installPath: String? = nil,
+        description: String? = nil,
+        homepageURL: String? = nil,
         lastSeen: Date = Date()
     ) {
         self.id = "\(manager.rawValue):\(name)"
@@ -26,6 +32,9 @@ final class CachedPackage {
         self.installedVersion = installedVersion
         self.latestVersion = latestVersion
         self.managerRaw = manager.rawValue
+        self.installPath = installPath
+        self.desc = description
+        self.homepageURL = homepageURL
         self.lastSeen = lastSeen
     }
 
@@ -35,6 +44,9 @@ final class CachedPackage {
             installedVersion: package.installedVersion,
             latestVersion: package.latestVersion,
             manager: package.manager,
+            installPath: package.installPath,
+            description: package.description,
+            homepageURL: package.homepage?.absoluteString,
             lastSeen: lastSeen
         )
     }
@@ -45,9 +57,9 @@ final class CachedPackage {
             installedVersion: installedVersion,
             latestVersion: latestVersion,
             manager: manager,
-            installPath: nil,
-            description: nil,
-            homepage: nil
+            installPath: installPath,
+            description: desc,
+            homepage: homepageURL.flatMap(URL.init)
         )
     }
 }

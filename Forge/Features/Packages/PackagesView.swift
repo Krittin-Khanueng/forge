@@ -21,6 +21,7 @@ struct PackagesView: View {
                             ProgressView()
                                 .controlSize(.small)
                                 .padding(.top, ForgeTheme.Spacing.s)
+                                .accessibilityLabel("Refreshing packages")
                         }
                     }
             }
@@ -65,7 +66,7 @@ struct PackagesView: View {
         .searchable(text: Binding(
             get: { viewModel.searchText },
             set: { viewModel.setSearchText($0) }
-        ), prompt: "Search packages...")
+        ), prompt: "Search packages")
         .navigationTitle("Packages")
         .task {
             await viewModel.loadIfNeeded()

@@ -131,7 +131,13 @@ actor ProcessRunner {
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
 
-        try! process.run()
+        do {
+            try process.run()
+        } catch {
+            logger.error("Stream failed to launch: \(commandLabel) — \(error.localizedDescription)")
+            continuation.finish(throwing: error)
+            return
+        }
         let pid = process.processIdentifier
 
         var timeoutTask: Task<Void, Never>?
@@ -255,41 +261,7 @@ actor ProcessRunner {
         return env
     }
 
-    private var knownBinPaths: [String] {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        var paths: [String] = [
-            "/opt/homebrew/bin",
-            home + "/.bun/bin",
-            home + "/.local/bin",
-            home + "/.cargo/bin",
-            home + "/Library/pnpm/bin",
-            "/usr/local/bin",
-            "/usr/bin",
-            "/bin",
-        ]
-
-        if let nvmDir = ProcessInfo.processInfo.environment["NVM_DIR"] {
-            let symlink = nvmDir + "/versions/node"
-            if let entries = try? FileManager.default.contentsOfDirectory(atPath: symlink) {
-                for entry in entries where entry.hasPrefix("v") {
-                    paths.append("\(nvmDir)/versions/node/\(entry)/bin")
-                }
-            }
-        }
-
-        let fm = FileManager.default
-        let fnmDefault = home + "/Library/Application Support/fnm/node-versions"
-        if fm.fileExists(atPath: fnmDefault) {
-            let versionsDir = URL(fileURLWithPath: fnmDefault)
-            if let entries = try? fm.contentsOfDirectory(atPath: versionsDir.path) {
-                if let latest = entries.sorted().last {
-                    paths.append("\(fnmDefault)/\(latest)/installation/bin")
-                }
-            }
-        }
-
-        return paths
-    }
+    private var knownBinPaths: [String] { KnownPaths.all }
 
     private func withProcessTimeout<T: Sendable>(
         _ timeout: Duration?,
@@ -312,7 +284,9 @@ actor ProcessRunner {
                 try await operation()
             }
 
-            let value = try await group.next()!
+            guard let value = try await group.next() else {
+                throw ProcessError.cancelled
+            }
             group.cancelAll()
             return value
         }
