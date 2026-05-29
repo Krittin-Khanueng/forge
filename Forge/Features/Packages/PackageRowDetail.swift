@@ -86,6 +86,7 @@ struct PackageRowDetail: View {
                         isLoading: isUpdating,
                         action: onUpdate
                     )
+                    .disabled(!canUpdate || !package.isOutdated || isUpdating || isUninstalling)
 
                     SecondaryButton(
                         label: isUninstalling ? "Uninstalling" : "Uninstall",
