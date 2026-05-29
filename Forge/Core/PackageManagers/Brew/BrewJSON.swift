@@ -55,10 +55,22 @@ struct BrewOutdatedEntry: Decodable, Sendable {
 
 extension BrewFormulaInfo {
     func toPackage() -> Package {
-        Package(
+        let installedVersion = installed?.first?.version
+        // Trust Homebrew's own `outdated` flag rather than diffing version
+        // strings: an installed revision like "1.5.4_1" is newer than stable
+        // "1.5.4" and must not read as outdated.
+        let latestVersion: String?
+        if installedVersion == nil {
+            latestVersion = versions?.stable          // not installed: show the available version
+        } else if outdated == true {
+            latestVersion = versions?.stable          // installed & outdated: show the upgrade target
+        } else {
+            latestVersion = installedVersion          // installed & current: mirror installed so it reads as up to date
+        }
+        return Package(
             name: name,
-            installedVersion: installed?.first?.version,
-            latestVersion: versions?.stable,
+            installedVersion: installedVersion,
+            latestVersion: latestVersion,
             manager: .brew,
             installPath: nil,
             description: desc,

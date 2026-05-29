@@ -163,6 +163,36 @@ struct BrewJSONTests {
         #expect(pkg.isOutdated == false)
     }
 
+    @Test("Installed brew revision is not outdated when brew reports current")
+    func revisionedFormulaIsNotOutdated() throws {
+        let json = #"""
+        {
+            "formulae": [
+                {
+                    "name": "openssl",
+                    "desc": null,
+                    "homepage": null,
+                    "versions": { "stable": "1.5.4" },
+                    "installed": [{ "version": "1.5.4_1" }],
+                    "outdated": false
+                }
+            ],
+            "casks": []
+        }
+        """#
+
+        let data = Data(json.utf8)
+        let response = try decoder.decode(BrewInfoResponse.self, from: data)
+        let formula = try #require(response.formulae.first)
+
+        let pkg = formula.toPackage()
+        #expect(pkg.installedVersion == "1.5.4_1")
+        // A Homebrew revision (_1) is newer than bare stable; honoring brew's
+        // own `outdated: false` flag keeps it from reading as outdated.
+        #expect(pkg.latestVersion == "1.5.4_1")
+        #expect(pkg.isOutdated == false)
+    }
+
     @Test("Decodes brew outdated --json=v2 response")
     func decodesBrewOutdatedResponse() throws {
         let json = #"""
