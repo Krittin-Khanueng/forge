@@ -9,7 +9,16 @@ final class SystemNotifier {
 
     private init() {}
 
+    /// `UNUserNotificationCenter.current()` raises an Objective-C exception
+    /// (uncatchable in Swift) when the process has no bundle identifier — e.g.
+    /// when the executable is launched outside a packaged `.app`. Skip all
+    /// notification work in that case rather than crashing.
+    private var isRunningInBundle: Bool {
+        Bundle.main.bundleIdentifier != nil
+    }
+
     func requestAuthorizationIfNeeded() async {
+        guard isRunningInBundle else { return }
         let center = UNUserNotificationCenter.current()
         do {
             let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
@@ -20,7 +29,7 @@ final class SystemNotifier {
     }
 
     func notifyOutdatedAvailable(count: Int) async {
-        guard authorized else { return }
+        guard isRunningInBundle, authorized else { return }
 
         let content = UNMutableNotificationContent()
         content.title = "Updates Available"

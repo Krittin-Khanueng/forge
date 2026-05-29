@@ -127,37 +127,33 @@ actor YarnManager: PackageManagerProtocol {
     }
 
     func search(query: String) async throws -> [Package] {
+        guard await isClassic else { return [] }
         let yarnURL = try await requireYarn()
-        let result = try await runner.run(yarnURL, arguments: ["info", query, "--json"])
+        let result = try await runner.run(yarnURL, arguments: ["search", query])
 
-        let stdout = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !stdout.isEmpty else { return [] }
+        let lines = result.stdout
+            .split(separator: "\n", omittingEmptySubsequences: true)
+            .dropFirst()
 
-        struct YarnInfoResponse: Decodable, Sendable {
-            let data: YarnInfoData?
+        return lines.compactMap { line in
+            let parts = line.split(separator: "\t", omittingEmptySubsequences: false)
+            guard parts.count >= 2 else { return nil }
+            let name = String(parts[0]).trimmingCharacters(in: .whitespaces)
+            let version = String(parts[1]).trimmingCharacters(in: .whitespaces)
+            let description = parts.count >= 3
+                ? String(parts[2]).trimmingCharacters(in: .whitespaces)
+                : nil
+            guard !name.isEmpty else { return nil }
+            return Package(
+                name: name,
+                installedVersion: nil,
+                latestVersion: version,
+                manager: .yarn,
+                installPath: nil,
+                description: description,
+                homepage: nil
+            )
         }
-
-        struct YarnInfoData: Decodable, Sendable {
-            let name: String?
-            let version: String?
-            let description: String?
-        }
-
-        guard let data = stdout.data(using: .utf8),
-              let response = try? JSONDecoder().decode(YarnInfoResponse.self, from: data),
-              let infoData = response.data else {
-            return []
-        }
-
-        return [Package(
-            name: infoData.name ?? query,
-            installedVersion: nil,
-            latestVersion: infoData.version,
-            manager: .yarn,
-            installPath: nil,
-            description: infoData.description,
-            homepage: nil
-        )]
     }
 
     func install(_ name: String) async throws {

@@ -28,10 +28,14 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .forgeSettingsChanged)) { _ in
             appEnv.reloadAppearance()
+            BackgroundScheduler.shared.restart()
         }
         .onAppear {
+            guard appEnv.paletteMonitor == nil else { return }
             appEnv.paletteMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                if event.modifierFlags.contains(.command), event.keyCode == 40 {
+                let isCommandK = event.modifierFlags.contains(.command)
+                    && event.charactersIgnoringModifiers?.lowercased() == "k"
+                if isCommandK {
                     appEnv.togglePalette()
                     return nil
                 }

@@ -94,6 +94,7 @@ struct SidebarView: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
+            .selectionDisabled()
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)

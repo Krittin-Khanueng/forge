@@ -84,7 +84,7 @@ struct UpdatesView: View {
             if let error = viewModel.error, viewModel.totalOutdated == 0 {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(ForgeTheme.Palette.forgeRed)
                     .lineLimit(2)
                     .frame(maxWidth: 360, alignment: .trailing)
             }
@@ -155,12 +155,14 @@ struct UpdatesView: View {
                 Button {
                     confirmingManager = kind
                 } label: {
-                    if viewModel.updatingManagers.contains(kind) {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                            .frame(width: 16, height: 16)
+                    HStack(spacing: ForgeTheme.Spacing.s) {
+                        if viewModel.updatingManagers.contains(kind) {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .frame(width: 16, height: 16)
+                        }
+                        Text(viewModel.updatingManagers.contains(kind) ? "Updating" : "Update All")
                     }
-                    Text(viewModel.updatingManagers.contains(kind) ? "Updating" : "Update All")
                 }
                 .buttonStyle(.bordered)
                 .disabled(viewModel.isUpdating)
@@ -195,12 +197,14 @@ struct UpdatesView: View {
                 Button {
                     Task { await viewModel.update(package) }
                 } label: {
-                    if viewModel.isUpdating(package) {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                            .frame(width: 16, height: 16)
+                    HStack(spacing: ForgeTheme.Spacing.s) {
+                        if viewModel.isUpdating(package) {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .frame(width: 16, height: 16)
+                        }
+                        Text(viewModel.isUpdating(package) ? "Updating" : "Update")
                     }
-                    Text(viewModel.isUpdating(package) ? "Updating" : "Update")
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(viewModel.isUpdating)

@@ -79,7 +79,7 @@ final class BackgroundScheduler {
         outdatedCount = refreshService.outdatedCount
         repo.update { $0.lastRefresh = Date() }
 
-        NotificationCenter.default.post(name: .forgeRefreshCompleted, object: nil)
+        // PackageRefreshService.performRefresh already posts .forgeRefreshCompleted.
 
         if outdatedCount > previousCount, repo.current().notifyOnOutdated {
             let added = outdatedCount - previousCount
@@ -88,6 +88,7 @@ final class BackgroundScheduler {
                 object: nil,
                 userInfo: ["count": outdatedCount, "added": added]
             )
+            await SystemNotifier.shared.notifyOutdatedAvailable(count: outdatedCount)
         }
 
         logger.info("Refresh complete: \(self.refreshService.packages.count) packages, \(self.outdatedCount) outdated")

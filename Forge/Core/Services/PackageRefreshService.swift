@@ -39,10 +39,9 @@ final class PackageRefreshService {
     }
 
     func refresh(force: Bool = true) async {
-        if isRefreshing {
-            if force {
-                await inFlightRefresh?.value
-            }
+        // Dedup: a refresh is already running — join it instead of starting a second.
+        if let inFlightRefresh {
+            await inFlightRefresh.value
             return
         }
 
@@ -95,51 +94,30 @@ final class PackageRefreshService {
 
         let kinds = registry.detectedKinds
 
-        await withTaskGroup(of: (PackageManagerKind, Result<[Package], Error>).self) { group in
+        await withTaskGroup(of: (PackageManagerKind, [Package]?, Error?, [Package]?, Error?).self) { group in
             for kind in kinds {
                 guard let manager = registry.manager(kind) else { continue }
                 group.addTask {
-                    do {
-                        let pkgs = try await manager.installedPackages()
-                        return (kind, .success(pkgs))
-                    } catch {
-                        return (kind, .failure(error))
-                    }
+                    async let installedTask = manager.installedPackages()
+                    async let outdatedTask = manager.outdatedPackages()
+                    var installed: [Package]?
+                    var installedError: Error?
+                    var outdated: [Package]?
+                    var outdatedError: Error?
+                    do { installed = try await installedTask } catch { installedError = error }
+                    do { outdated = try await outdatedTask } catch { outdatedError = error }
+                    return (kind, installed, installedError, outdated, outdatedError)
                 }
             }
-            for await (kind, result) in group {
-                switch result {
-                case .success(let pkgs):
-                    all.append(contentsOf: pkgs)
-                case .failure(let error):
+            for await (kind, installed, installedError, outdated, _) in group {
+                if let installed {
+                    all.append(contentsOf: installed)
+                } else {
                     failedManagers.append(kind.displayName)
-                    logger.error("Failed loading installed: \(kind.displayName), error=\(error.localizedDescription)")
+                    logger.error("Failed loading installed: \(kind.displayName), error=\(installedError?.localizedDescription ?? "unknown error")")
                 }
-            }
-        }
-
-        await withTaskGroup(of: (PackageManagerKind, Result<[Package], Error>).self) { group in
-            for kind in kinds {
-                guard registry.manager(kind) != nil else { continue }
-                guard let manager = registry.manager(kind) else { continue }
-                group.addTask {
-                    do {
-                        let outdated = try await manager.outdatedPackages()
-                        return (kind, .success(outdated))
-                    } catch {
-                        return (kind, .failure(error))
-                    }
-                }
-            }
-            for await (kind, result) in group {
-                switch result {
-                case .success(let outdated):
+                if let outdated {
                     PackageMergeHelpers.mergeOutdated(outdated, into: &all)
-                case .failure(let error):
-                    if !failedManagers.contains(kind.displayName) {
-                        failedManagers.append(kind.displayName)
-                    }
-                    logger.warning("Failed loading outdated: \(kind.displayName), error=\(error.localizedDescription)")
                 }
             }
         }
