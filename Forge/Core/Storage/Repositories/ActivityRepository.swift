@@ -6,6 +6,7 @@ final class ActivityRepository {
     private let context: ModelContext
     private var pendingSave: Task<Void, Never>?
     private let saveDelay: Duration = .milliseconds(500)
+    private let maxEntries = 200
 
     init(container: ModelContainer) {
         context = container.mainContext
@@ -19,6 +20,7 @@ final class ActivityRepository {
             manager: manager?.rawValue
         )
         context.insert(entry)
+        trimToCap()
         scheduleSave()
     }
 
@@ -34,6 +36,17 @@ final class ActivityRepository {
         pendingSave?.cancel()
         pendingSave = nil
         try? context.save()
+    }
+
+    private func trimToCap() {
+        var descriptor = FetchDescriptor<ActivityLogEntry>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        descriptor.fetchOffset = maxEntries
+        let stale = (try? context.fetch(descriptor)) ?? []
+        for entry in stale {
+            context.delete(entry)
+        }
     }
 
     private func scheduleSave() {

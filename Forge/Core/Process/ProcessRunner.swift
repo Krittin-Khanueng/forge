@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 
 actor ProcessRunner {
-    struct Options: Sendable {
+    struct Options {
         var workingDirectory: URL?
         var environment: [String: String]?
         var timeout: Duration?
@@ -12,14 +12,24 @@ actor ProcessRunner {
         static let `default` = Options()
     }
 
-    struct Result: Sendable {
+    struct Result {
         let exitCode: Int32
-        let stdout: String
-        let stderr: String
-        var isSuccess: Bool { exitCode == 0 }
+        let stdoutData: Data
+        let stderrData: Data
+        var stdout: String {
+            String(decoding: stdoutData, as: UTF8.self)
+        }
+
+        var stderr: String {
+            String(decoding: stderrData, as: UTF8.self)
+        }
+
+        var isSuccess: Bool {
+            exitCode == 0
+        }
     }
 
-    enum StreamEvent: Sendable {
+    enum StreamEvent {
         case stdoutLine(String)
         case stderrLine(String)
         case exited(Int32)
@@ -61,10 +71,8 @@ actor ProcessRunner {
                     throw ProcessError.cancelled
                 }
 
-                let stdout = String(data: out, encoding: .utf8) ?? ""
-                let stderr = String(data: err, encoding: .utf8) ?? ""
-
                 guard status == 0 else {
+                    let stderr = String(decoding: err, as: UTF8.self)
                     if !silenceErrorLog {
                         self.logger.error("Non-zero exit (\(status)): \(commandLabel)\n\(stderr)")
                     } else {
@@ -80,8 +88,8 @@ actor ProcessRunner {
                 self.logger.debug("Completed (0): \(commandLabel)")
                 return Result(
                     exitCode: status,
-                    stdout: stdout,
-                    stderr: stderr
+                    stdoutData: out,
+                    stderrData: err
                 )
             }
         } onCancel: {
@@ -261,7 +269,9 @@ actor ProcessRunner {
         return env
     }
 
-    private var knownBinPaths: [String] { KnownPaths.all }
+    private var knownBinPaths: [String] {
+        KnownPaths.all
+    }
 
     private func withProcessTimeout<T: Sendable>(
         _ timeout: Duration?,

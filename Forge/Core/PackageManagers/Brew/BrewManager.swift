@@ -6,10 +6,7 @@ actor BrewManager: PackageManagerProtocol {
 
     private let runner = ProcessRunner()
     private let logger = Logger.brew
-    private let decoder: JSONDecoder = {
-        let d = JSONDecoder()
-        return d
-    }()
+    private let decoder: JSONDecoder = .init()
 
     private var cachedURL: URL?
 
@@ -26,8 +23,7 @@ actor BrewManager: PackageManagerProtocol {
     func installedPackages() async throws -> [Package] {
         let brewURL = try await requireBrew()
         let result = try await runner.run(brewURL, arguments: ["info", "--json=v2", "--installed"])
-        let data = Data(result.stdout.utf8)
-        let response = try decoder.decode(BrewInfoResponse.self, from: data)
+        let response = try decoder.decode(BrewInfoResponse.self, from: result.stdoutData)
 
         let formulaPackages = response.formulae.map { $0.toPackage() }
         let caskPackages = response.casks.map { cask in
@@ -48,8 +44,7 @@ actor BrewManager: PackageManagerProtocol {
     func outdatedPackages() async throws -> [Package] {
         let brewURL = try await requireBrew()
         let result = try await runner.run(brewURL, arguments: ["outdated", "--json=v2"])
-        let data = Data(result.stdout.utf8)
-        let response = try decoder.decode(BrewOutdatedResponse.self, from: data)
+        let response = try decoder.decode(BrewOutdatedResponse.self, from: result.stdoutData)
 
         let formulaPackages = response.formulae.map { $0.toPackage() }
         let caskPackages = response.casks.map { $0.toPackage() }
