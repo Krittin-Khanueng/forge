@@ -1,0 +1,16 @@
+# SwiftFormat configuration for Forge
+# Install: brew install swiftformat — run: swiftformat .
+
+--swiftversion 6.3
+--indent 4
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--self remove
+--importgrouping testable-bottom
+--commas inline
+
+# Leave semantics-affecting transforms off; this repo relies on explicit
+# concurrency annotations and SwiftUI view builders.
+--disable redundantReturn, wrapMultilineStatementBraces

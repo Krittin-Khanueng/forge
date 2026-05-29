@@ -1,0 +1,40 @@
+# SwiftLint configuration for Forge
+# Install: brew install swiftlint — run: swiftlint
+
+included:
+  - Forge
+  - Tests
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+
+identifier_name:
+  min_length: 1          # short names like `d`, `f`, `id` are fine in this codebase
+  excluded: [id, db, ui, x, y]
+
+type_name:
+  min_length: 2
+
+disabled_rules:
+  - todo                 # WIP markers are allowed
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - first_where
+  - contains_over_filter_count
+  - force_unwrapping       # this codebase deliberately avoids force-unwraps
+
+custom_rules:
+  no_dispatch_main_async:
+    name: "No DispatchQueue.main.async"
+    regex: "DispatchQueue\\.main\\.async"
+    message: "Use @MainActor / structured concurrency, not DispatchQueue.main.async (see CONTEXT.md)."
+    severity: warning
+  no_state_object:
+    name: "No @StateObject/@ObservedObject"
+    regex: "@(StateObject|ObservedObject)"
+    message: "Use @Observable + @State, not @StateObject/@ObservedObject (see CONTEXT.md)."
+    severity: warning
