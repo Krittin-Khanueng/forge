@@ -1,6 +1,7 @@
 .build/
 dist/
 DerivedData/
+.claude/
 *.xcodeproj
 xcuserdata/
 .DS_Store
