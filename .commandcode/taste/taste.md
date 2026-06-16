@@ -35,3 +35,9 @@ See [architecture/taste.md](architecture/taste.md)
 
 # json-decoding
 - Use unknownDefault: true in JSONDecoder or define optional properties for external service JSON payloads (e.g., Homebrew may add fields without version bumps). Confidence: 0.70
+
+# workflow
+- Commit and push after completing significant task groups. Confidence: 0.70
+
+# documentation
+- Keep AGENTS.md and CONTEXT.md updated when project structure or conventions change. Confidence: 0.65
