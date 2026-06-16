@@ -61,6 +61,21 @@ Manage all your package managers from a single, beautiful native app. Forge dete
 
 ---
 
+## Install
+
+Download the latest `Forge.app` from the
+[**Releases**](https://github.com/Krittin-Khanueng/forge/releases) page, unzip,
+and drag it into `/Applications`.
+
+Forge is ad-hoc signed (not notarized through a paid Apple Developer account),
+so on first launch macOS Gatekeeper will refuse to open it. To get past it
+**once**, either:
+
+- **Right-click** `Forge.app` → **Open** → **Open** in the dialog, **or**
+- run in Terminal: `xattr -dr com.apple.quarantine /Applications/Forge.app`
+
+---
+
 ## Build & Run
 
 ### Build
