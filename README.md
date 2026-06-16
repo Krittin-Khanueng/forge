@@ -8,6 +8,14 @@ Manage all your package managers from a single, beautiful native app. Forge dete
 
 ---
 
+## Screenshots
+
+<!-- Add a screenshot at docs/screenshot.png (Cmd+Shift+4, then Space, click the
+     Forge window), then uncomment the line below: -->
+<!-- ![Forge](docs/screenshot.png) -->
+
+---
+
 ## Features
 
 ### Package Management
@@ -62,6 +70,14 @@ Manage all your package managers from a single, beautiful native app. Forge dete
 ---
 
 ## Install
+
+### Homebrew
+
+```bash
+brew install --cask Krittin-Khanueng/tap/forge
+```
+
+### Manual download
 
 Download the latest `Forge.app` from the
 [**Releases**](https://github.com/Krittin-Khanueng/forge/releases) page, unzip,

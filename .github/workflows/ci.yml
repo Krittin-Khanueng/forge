@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    # Forge needs the macOS 26 SDK + Swift 6.3. If GitHub hasn't published the
+    # macos-26 runner image yet, switch this to the latest available macOS label.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.app 2>/dev/null || echo "using default Xcode at $(xcode-select -p)"
+      - name: Versions
+        run: swift --version && sw_vers
+      - name: Build
+        run: swift build
+      - name: Test
+        run: swift test
