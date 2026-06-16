@@ -76,6 +76,20 @@ swift test
 ### Run in Xcode
 Open `Package.swift` in Xcode 26+ and press `Cmd+R`.
 
+### Build a runnable app (release)
+`swift build` only produces a bare executable with no bundle identifier — the
+login item and notifications won't work. To get a real, double-clickable app:
+
+```bash
+Scripts/build-app.sh        # → dist/Forge.app (version 1.0)
+Scripts/build-app.sh 1.2    # override the version
+open dist/Forge.app
+```
+
+The script builds in release mode, wraps the binary in `Forge.app` with a
+proper `Info.plist` (bundle id `com.forge.app`), bundles the compiled
+resources, and ad-hoc signs it with the hardened runtime + entitlements.
+
 ---
 
 ## Architecture
